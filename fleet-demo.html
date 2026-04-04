@@ -1,0 +1,1550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>FleetDemo — Fleet Management</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:        #f1f5f9;
+    --sidebar:   #1a1f2e;
+    --accent:    #3b82f6;
+    --card:      #ffffff;
+    --border:    #e2e8f0;
+    --text:      #1e293b;
+    --muted:     #64748b;
+    --success:   #22c55e;
+    --warning:   #f59e0b;
+    --danger:    #ef4444;
+  }
+
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+         background: var(--bg); color: var(--text); height: 100vh; overflow: hidden; }
+
+  #app { display: grid; grid-template-columns: 230px 1fr; height: 100vh; }
+
+  /* ── Sidebar ── */
+  #sidebar { background: var(--sidebar); color: #e2e8f0; display: flex;
+             flex-direction: column; overflow-y: auto; }
+  .brand { padding: 1.5rem 1.25rem 1rem; font-size: 1.25rem; font-weight: 700;
+           color: #fff; letter-spacing: -0.02em; border-bottom: 1px solid #2d3548; }
+  .brand span { color: var(--accent); }
+  #sidebar nav ul { list-style: none; padding: 0.75rem 0; }
+  #sidebar nav ul li { display: flex; align-items: center; gap: 0.6rem;
+                        padding: 0.7rem 1.25rem; cursor: pointer; font-size: 0.9rem;
+                        color: #94a3b8; transition: all .15s; }
+  #sidebar nav ul li:hover { background: #2d3548; color: #e2e8f0; }
+  #sidebar nav ul li.active { background: var(--accent); color: #fff; font-weight: 600; }
+  #sidebar nav ul li svg { flex-shrink: 0; }
+  .sidebar-section { padding: 0.5rem 1.25rem 0.25rem;
+                     font-size: 0.7rem; letter-spacing: .1em; text-transform: uppercase;
+                     color: #4a5568; margin-top: 0.5rem; }
+
+  /* ── Content ── */
+  #content { overflow-y: auto; background: var(--bg); }
+  #content section { display: none; padding: 2rem; }
+
+  /* ── Page header ── */
+  .page-header { display: flex; align-items: center; justify-content: space-between;
+                 margin-bottom: 1.5rem; }
+  .page-header h1 { font-size: 1.5rem; font-weight: 700; }
+  .page-header p  { font-size: 0.875rem; color: var(--muted); margin-top: 0.2rem; }
+
+  /* ── Cards ── */
+  .card { background: var(--card); border-radius: 10px; border: 1px solid var(--border);
+          padding: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,.05); }
+
+  /* ── Stat row ── */
+  .stat-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 1rem; margin-bottom: 1.5rem; }
+  .stat-card { background: var(--card); border-radius: 10px; border: 1px solid var(--border);
+               padding: 1.25rem 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,.05); }
+  .stat-card .val  { font-size: 2rem; font-weight: 700; line-height: 1; }
+  .stat-card .lbl  { font-size: 0.8rem; color: var(--muted); margin-top: 0.4rem; }
+  .stat-card .icon { font-size: 1.5rem; margin-bottom: 0.5rem; }
+
+  /* ── Two-col grid ── */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+
+  /* ── Health bar ── */
+  .health-bar { display: flex; height: 10px; border-radius: 99px; overflow: hidden;
+                margin: 0.75rem 0; }
+  .health-bar .seg { transition: width .4s; }
+
+  /* ── Tables ── */
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+  th { background: #f8fafc; text-align: left; padding: 0.65rem 1rem;
+       font-size: 0.72rem; text-transform: uppercase; letter-spacing: .05em;
+       color: var(--muted); border-bottom: 1px solid var(--border); white-space: nowrap; }
+  td { padding: 0.7rem 1rem; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  tbody tr:hover td { background: #f8fafc; }
+
+  /* ── Badges ── */
+  .badge { display: inline-flex; align-items: center; padding: 0.2rem 0.6rem;
+           border-radius: 99px; font-size: 0.72rem; font-weight: 600; white-space: nowrap; }
+  .badge-active         { background: #dcfce7; color: #166534; }
+  .badge-maintenance    { background: #fef9c3; color: #854d0e; }
+  .badge-out_of_service { background: #fee2e2; color: #991b1b; }
+  .badge-pass           { background: #dcfce7; color: #166534; }
+  .badge-fail           { background: #fee2e2; color: #991b1b; }
+  .badge-route          { background: #ede9fe; color: #5b21b6; }
+  .badge-one_time       { background: #cffafe; color: #155e75; }
+  .badge-completed      { background: #dcfce7; color: #166534; }
+  .badge-scheduled      { background: #fef9c3; color: #854d0e; }
+  .badge-monthly        { background: #e0f2fe; color: #0369a1; }
+  .badge-yearly         { background: #faf5ff; color: #7e22ce; }
+  .badge-inactive       { background: #f1f5f9; color: #475569; }
+  .badge-salary         { background: #dbeafe; color: #1e40af; }
+  .badge-bonus          { background: #ede9fe; color: #5b21b6; }
+  .badge-reimbursement  { background: #fef3c7; color: #92400e; }
+  .badge-other          { background: #f1f5f9; color: #475569; }
+
+  /* ── Profit coloring ── */
+  .profit-pos { color: #16a34a; font-weight: 600; }
+  .profit-neg { color: #dc2626; font-weight: 600; }
+
+  /* ── Buttons ── */
+  .btn { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.5rem 1rem;
+         border-radius: 7px; border: none; font-size: 0.875rem; font-weight: 500;
+         cursor: pointer; transition: all .15s; }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: #2563eb; }
+  .btn-ghost   { background: transparent; color: var(--muted); border: 1px solid var(--border); }
+  .btn-ghost:hover { background: var(--bg); }
+  .btn-danger  { background: #fee2e2; color: #991b1b; }
+  .btn-danger:hover { background: #fecaca; }
+  .btn-sm { padding: 0.3rem 0.65rem; font-size: 0.78rem; }
+  .btn-info { background: #eff6ff; color: #1d4ed8; }
+  .btn-info:hover { background: #dbeafe; }
+
+  /* ── Filter bar ── */
+  .filter-bar { display: flex; gap: 0.75rem; margin-bottom: 1rem; flex-wrap: wrap; }
+  .filter-bar input, .filter-bar select {
+    padding: 0.5rem 0.75rem; border: 1px solid var(--border); border-radius: 7px;
+    font-size: 0.875rem; background: #fff; color: var(--text); outline: none; }
+  .filter-bar input:focus, .filter-bar select:focus { border-color: var(--accent); }
+  .filter-bar input { flex: 1; min-width: 180px; }
+
+  /* ── Summary chips ── */
+  .chip-row { display: flex; gap: 1rem; margin-bottom: 1.25rem; flex-wrap: wrap; }
+  .chip { background: var(--card); border: 1px solid var(--border); border-radius: 8px;
+          padding: 0.6rem 1rem; font-size: 0.85rem; }
+  .chip .c-val { font-size: 1.2rem; font-weight: 700; }
+  .chip .c-lbl { color: var(--muted); font-size: 0.78rem; }
+
+  /* ── Modal ── */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.45);
+                   display: flex; align-items: center; justify-content: center; z-index: 200; }
+  .modal-box { background: #fff; border-radius: 12px; padding: 1.75rem;
+               width: 500px; max-height: 90vh; overflow-y: auto;
+               box-shadow: 0 20px 60px rgba(0,0,0,.2); }
+  .modal-box h2 { font-size: 1.1rem; font-weight: 700; margin-bottom: 1.25rem; }
+  .modal-footer { display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.25rem; }
+
+  /* ── Form ── */
+  .form-group { margin-bottom: 1rem; }
+  .form-group label { display: block; font-size: 0.8rem; font-weight: 600;
+                      color: var(--muted); margin-bottom: 0.3rem; }
+  .form-group input, .form-group select, .form-group textarea {
+    width: 100%; padding: 0.55rem 0.75rem; border: 1px solid var(--border);
+    border-radius: 7px; font-size: 0.875rem; color: var(--text);
+    background: #fff; outline: none; font-family: inherit; }
+  .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+    border-color: var(--accent); box-shadow: 0 0 0 3px rgba(59,130,246,.1); }
+  .form-group textarea { resize: vertical; min-height: 70px; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+
+  /* ── Checklist ── */
+  .checklist-item { display: flex; align-items: center; justify-content: space-between;
+                    padding: 0.6rem 0; border-bottom: 1px solid var(--border); }
+  .checklist-item:last-child { border-bottom: none; }
+  .checklist-item .item-name { font-size: 0.875rem; font-weight: 500; }
+  .radio-group { display: flex; gap: 0.75rem; }
+  .radio-group label { display: flex; align-items: center; gap: 0.3rem;
+                       font-size: 0.85rem; cursor: pointer; }
+  .radio-group input[type=radio] { accent-color: var(--accent); }
+
+  /* ── Vehicle / Driver detail modals ── */
+  .detail-section { margin-top: 1rem; }
+  .detail-section h3 { font-size: 0.85rem; font-weight: 700; text-transform: uppercase;
+                       letter-spacing: .05em; color: var(--muted); margin-bottom: 0.5rem; }
+  .detail-item { display: flex; justify-content: space-between; padding: 0.4rem 0;
+                 border-bottom: 1px solid var(--border); font-size: 0.875rem; }
+  .detail-item:last-child { border-bottom: none; }
+
+  /* ── Cost breakdown table in detail modal ── */
+  .cost-row { display: flex; justify-content: space-between; padding: 0.35rem 0;
+              border-bottom: 1px solid var(--border); font-size: 0.875rem; }
+  .cost-row:last-child { border-bottom: none; }
+  .cost-row.total { font-weight: 700; border-top: 2px solid var(--border); margin-top: 0.25rem; padding-top: 0.5rem; }
+  .cost-row.profit-line { font-weight: 700; font-size: 1rem; }
+
+  /* ── Driver card ── */
+  .driver-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px,1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+  .driver-card { background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+                 padding: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,.05); }
+  .driver-card .d-name { font-size: 1rem; font-weight: 700; margin-bottom: 0.25rem; }
+  .driver-card .d-info { font-size: 0.78rem; color: var(--muted); line-height: 1.6; }
+
+  /* ── Misc ── */
+  .empty { text-align: center; padding: 2rem; color: var(--muted); font-size: 0.875rem; }
+  .text-right { text-align: right; }
+  .text-muted { color: var(--muted); }
+  .mt-1 { margin-top: 1rem; }
+  .card-title { font-size: 0.95rem; font-weight: 700; margin-bottom: 1rem; }
+  .card-subtitle { font-size: 0.75rem; font-weight: 400; color: var(--muted); margin-left: 0.5rem; }
+  .expiry-warn { color: #d97706; font-weight: 600; }
+  .section-gap { margin-top: 1.5rem; }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ── Sidebar ── -->
+  <div id="sidebar">
+    <div class="brand">Fleet<span>Demo</span></div>
+    <nav>
+      <div class="sidebar-section">Overview</div>
+      <ul>
+        <li data-tab="dashboard" class="active">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+          Dashboard
+        </li>
+        <li data-tab="vehicles">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 17H3a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v9a2 2 0 01-2 2h-2"/><circle cx="7.5" cy="17.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg>
+          Vehicles
+        </li>
+      </ul>
+      <div class="sidebar-section">Operations</div>
+      <ul>
+        <li data-tab="jobs">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="16" x2="16" y2="16"/></svg>
+          Jobs
+        </li>
+        <li data-tab="maintenance">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
+          Maintenance
+        </li>
+        <li data-tab="fuel">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 22V8l8-6 8 6v14"/><path d="M12 22v-7h-3v7"/><path d="M15 22v-7"/></svg>
+          Fuel Log
+        </li>
+        <li data-tab="inspections">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+          Inspections
+        </li>
+      </ul>
+      <div class="sidebar-section">Costs &amp; People</div>
+      <ul>
+        <li data-tab="drivers">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+          Drivers
+        </li>
+      </ul>
+    </nav>
+  </div>
+
+  <!-- ── Main Content ── -->
+  <div id="content">
+    <section id="tab-dashboard"></section>
+    <section id="tab-vehicles"></section>
+    <section id="tab-jobs"></section>
+    <section id="tab-maintenance"></section>
+    <section id="tab-fuel"></section>
+    <section id="tab-inspections"></section>
+    <section id="tab-drivers"></section>
+  </div>
+
+</div>
+
+<script>
+// ═══════════════════════════════════════════
+//  DATA — VEHICLES
+// ═══════════════════════════════════════════
+
+const vehicles = [
+  { id:1,  year:2021, make:"Ford",       model:"F-150",         vin:"1FTFW1E83MFA12345", status:"active",        mileage:34210, color:"White"  },
+  { id:2,  year:2020, make:"Chevrolet",  model:"Silverado 1500",vin:"3GCUYDED0LG123456", status:"active",        mileage:51880, color:"Black"  },
+  { id:3,  year:2022, make:"RAM",        model:"1500",          vin:"1C6SRFFT3NN123456", status:"maintenance",   mileage:22450, color:"Red"    },
+  { id:4,  year:2019, make:"Toyota",     model:"Tacoma",        vin:"5TFAX5GN0KX123456", status:"active",        mileage:67300, color:"Silver" },
+  { id:5,  year:2023, make:"Ford",       model:"Transit 250",   vin:"1FTBR1C84PKA12345", status:"active",        mileage:14500, color:"White"  },
+  { id:6,  year:2018, make:"GMC",        model:"Sierra 2500HD", vin:"1GT22REG5JF123456", status:"out_of_service",mileage:98750, color:"Gray"   },
+  { id:7,  year:2021, make:"Nissan",     model:"Frontier",      vin:"1N6AD0ER8MN123456", status:"active",        mileage:29800, color:"Blue"   },
+  { id:8,  year:2022, make:"Mercedes",   model:"Sprinter 2500", vin:"W1Y40CHY4NT123456", status:"maintenance",   mileage:41200, color:"White"  },
+  { id:9,  year:2020, make:"Toyota",     model:"Tundra",        vin:"5TFDY5F12LX123456", status:"active",        mileage:55600, color:"Black"  },
+  { id:10, year:2023, make:"Chevrolet",  model:"Express 2500",  vin:"1GCWGBFP1P1123456", status:"active",        mileage:8900,  color:"White"  },
+];
+
+// ═══════════════════════════════════════════
+//  DATA — MAINTENANCE & FUEL
+// ═══════════════════════════════════════════
+
+const maintenanceEntries = [
+  { id:1,  vehicleId:1,  date:"2026-01-15", type:"Oil Change",        mileage:33000, cost:89.99,   tech:"Mike R.",  notes:"Full synthetic 5W-30" },
+  { id:2,  vehicleId:2,  date:"2026-02-03", type:"Tire Rotation",     mileage:50500, cost:45.00,   tech:"Sarah L.", notes:"" },
+  { id:3,  vehicleId:3,  date:"2026-03-10", type:"Brake Service",     mileage:22000, cost:420.00,  tech:"Mike R.",  notes:"Replaced front pads & rotors" },
+  { id:4,  vehicleId:4,  date:"2025-12-20", type:"Oil Change",        mileage:66000, cost:79.99,   tech:"Tony B.",  notes:"" },
+  { id:5,  vehicleId:5,  date:"2026-02-28", type:"Air Filter",        mileage:13000, cost:35.00,   tech:"Sarah L.", notes:"" },
+  { id:6,  vehicleId:8,  date:"2026-03-22", type:"Transmission Svc",  mileage:40000, cost:1250.00, tech:"Tony B.",  notes:"Fluid flush and filter replacement" },
+  { id:7,  vehicleId:6,  date:"2026-01-05", type:"Engine Repair",     mileage:97500, cost:3200.00, tech:"Mike R.",  notes:"Head gasket replacement" },
+  { id:8,  vehicleId:9,  date:"2026-03-01", type:"Tire Rotation",     mileage:54000, cost:45.00,   tech:"Sarah L.", notes:"" },
+  { id:9,  vehicleId:7,  date:"2026-02-14", type:"Oil Change",        mileage:28500, cost:79.99,   tech:"Tony B.",  notes:"" },
+  { id:10, vehicleId:10, date:"2026-03-15", type:"30K Service",       mileage:8000,  cost:320.00,  tech:"Mike R.",  notes:"Full scheduled service" },
+];
+
+const fuelEntries = [
+  { id:1,  vehicleId:1,  date:"2026-03-28", gallons:18.4, cpg:3.79, total:69.74,  odometer:34100, full:true  },
+  { id:2,  vehicleId:2,  date:"2026-03-25", gallons:22.1, cpg:3.75, total:82.88,  odometer:51750, full:true  },
+  { id:3,  vehicleId:4,  date:"2026-03-20", gallons:16.8, cpg:3.82, total:64.18,  odometer:67200, full:true  },
+  { id:4,  vehicleId:5,  date:"2026-03-18", gallons:25.3, cpg:3.79, total:95.89,  odometer:14400, full:true  },
+  { id:5,  vehicleId:7,  date:"2026-03-22", gallons:14.9, cpg:3.85, total:57.37,  odometer:29700, full:true  },
+  { id:6,  vehicleId:9,  date:"2026-03-30", gallons:21.5, cpg:3.78, total:81.27,  odometer:55500, full:true  },
+  { id:7,  vehicleId:10, date:"2026-03-27", gallons:24.8, cpg:3.80, total:94.24,  odometer:8800,  full:true  },
+  { id:8,  vehicleId:1,  date:"2026-03-10", gallons:17.2, cpg:3.72, total:63.98,  odometer:33800, full:true  },
+  { id:9,  vehicleId:2,  date:"2026-03-08", gallons:20.6, cpg:3.68, total:75.81,  odometer:51500, full:false },
+  { id:10, vehicleId:4,  date:"2026-03-05", gallons:15.1, cpg:3.72, total:56.17,  odometer:67000, full:true  },
+];
+
+// ═══════════════════════════════════════════
+//  DATA — INSPECTIONS
+// ═══════════════════════════════════════════
+
+const CHECKLIST = ["Tires & Pressure","Exterior Lights","Brakes","Fluid Levels","Windshield & Wipers","Mirrors","Horn","Seatbelts"];
+
+const inspections = [
+  { id:1, vehicleId:1, date:"2026-03-31", driver:"James T.",
+    results:{"Tires & Pressure":"pass","Exterior Lights":"pass","Brakes":"pass","Fluid Levels":"pass","Windshield & Wipers":"pass","Mirrors":"pass","Horn":"pass","Seatbelts":"pass"},
+    pass:true, notes:"" },
+  { id:2, vehicleId:3, date:"2026-03-30", driver:"Karen M.",
+    results:{"Tires & Pressure":"fail","Exterior Lights":"pass","Brakes":"fail","Fluid Levels":"pass","Windshield & Wipers":"pass","Mirrors":"pass","Horn":"pass","Seatbelts":"pass"},
+    pass:false, notes:"Front left tire low, brake noise on stop" },
+  { id:3, vehicleId:5, date:"2026-03-29", driver:"Luis R.",
+    results:{"Tires & Pressure":"pass","Exterior Lights":"pass","Brakes":"pass","Fluid Levels":"pass","Windshield & Wipers":"fail","Mirrors":"pass","Horn":"pass","Seatbelts":"pass"},
+    pass:false, notes:"Driver side wiper streaking" },
+  { id:4, vehicleId:2, date:"2026-03-28", driver:"Dana W.",
+    results:{"Tires & Pressure":"pass","Exterior Lights":"pass","Brakes":"pass","Fluid Levels":"pass","Windshield & Wipers":"pass","Mirrors":"pass","Horn":"pass","Seatbelts":"pass"},
+    pass:true, notes:"" },
+  { id:5, vehicleId:9, date:"2026-03-27", driver:"James T.",
+    results:{"Tires & Pressure":"pass","Exterior Lights":"fail","Brakes":"pass","Fluid Levels":"pass","Windshield & Wipers":"pass","Mirrors":"pass","Horn":"pass","Seatbelts":"pass"},
+    pass:false, notes:"Rear left tail light out" },
+];
+
+// ═══════════════════════════════════════════
+//  DATA — JOBS
+// ═══════════════════════════════════════════
+
+const jobs = [
+  { id:1,  name:"Airport Shuttle Route A",    type:"route",    vehicleId:1,  driverId:1, revenue:350,  recurrence:"daily",   startDate:"2026-01-01", startTime:"06:00", endTime:"09:00", status:"active"    },
+  { id:2,  name:"Downtown Delivery Circuit",  type:"route",    vehicleId:2,  driverId:4, revenue:280,  recurrence:"daily",   startDate:"2026-01-01", startTime:"08:00", endTime:"14:00", status:"active"    },
+  { id:3,  name:"Warehouse Run — North",      type:"route",    vehicleId:5,  driverId:3, revenue:420,  recurrence:"weekly",  startDate:"2026-01-05", startTime:"07:00", endTime:"15:00", status:"active"    },
+  { id:4,  name:"School District Transport",  type:"route",    vehicleId:7,  driverId:6, revenue:190,  recurrence:"weekly",  startDate:"2026-01-06", startTime:"07:30", endTime:"08:30", status:"active"    },
+  { id:5,  name:"County Fair Shuttle",        type:"route",    vehicleId:9,  driverId:1, revenue:310,  recurrence:"weekly",  startDate:"2026-02-01", startTime:"10:00", endTime:"18:00", status:"active"    },
+  { id:6,  name:"Corporate Move — TechCorp",  type:"one_time", vehicleId:8,  driverId:null, revenue:1200, date:"2026-03-15", startTime:"09:00", endTime:"17:00", status:"completed" },
+  { id:7,  name:"Event Staff Transport",      type:"one_time", vehicleId:4,  driverId:5, revenue:650,  date:"2026-03-22",    startTime:"14:00", endTime:"23:00", status:"completed" },
+  { id:8,  name:"Emergency Parts Delivery",   type:"one_time", vehicleId:9,  driverId:1, revenue:380,  date:"2026-03-28",    startTime:"10:00", endTime:"13:00", status:"completed" },
+  { id:9,  name:"Construction Site Haul",     type:"one_time", vehicleId:10, driverId:null, revenue:890, date:"2026-03-10", startTime:"06:00", endTime:"16:00", status:"completed" },
+  { id:10, name:"Medical Supply Run",         type:"one_time", vehicleId:1,  driverId:1, revenue:450,  date:"2026-02-20",    startTime:"08:00", endTime:"11:00", status:"completed" },
+];
+
+// "Last month" constants — March 2026
+const LM_START = "2026-03-01", LM_END = "2026-03-31", LM_DAYS = 31;
+
+// ═══════════════════════════════════════════
+//  DATA — INSURANCE
+// ═══════════════════════════════════════════
+
+const insurancePolicies = [
+  { id:1,  vehicleId:1,  provider:"Geico",       type:"monthly", cost:180,  startDate:"2026-01-01", notes:"Comprehensive" },
+  { id:2,  vehicleId:2,  provider:"Progressive", type:"yearly",  cost:1920, startDate:"2026-01-01", notes:"Full coverage" },
+  { id:3,  vehicleId:3,  provider:"State Farm",  type:"monthly", cost:195,  startDate:"2026-01-01", notes:"Comprehensive" },
+  { id:4,  vehicleId:4,  provider:"Geico",       type:"yearly",  cost:1560, startDate:"2026-01-01", notes:"Liability + collision" },
+  { id:5,  vehicleId:5,  provider:"Progressive", type:"monthly", cost:220,  startDate:"2026-01-01", notes:"Commercial fleet" },
+  { id:6,  vehicleId:6,  provider:"Allstate",    type:"yearly",  cost:2400, startDate:"2026-01-01", notes:"Full coverage" },
+  { id:7,  vehicleId:7,  provider:"State Farm",  type:"monthly", cost:165,  startDate:"2026-01-01", notes:"Comprehensive" },
+  { id:8,  vehicleId:8,  provider:"Progressive", type:"monthly", cost:245,  startDate:"2026-01-01", notes:"Commercial van" },
+  { id:9,  vehicleId:9,  provider:"Geico",       type:"yearly",  cost:1800, startDate:"2026-01-01", notes:"Full coverage" },
+  { id:10, vehicleId:10, provider:"Progressive", type:"monthly", cost:210,  startDate:"2026-01-01", notes:"Commercial van" },
+];
+
+// ═══════════════════════════════════════════
+//  DATA — PARKING
+// ═══════════════════════════════════════════
+
+const parkingEntries = [
+  // Monthly (vehicle-level)
+  { id:1, vehicleId:1,  type:"monthly",  cost:250, startDate:"2026-01-01", location:"Downtown Garage A",  jobId:null, date:null,         notes:"" },
+  { id:2, vehicleId:2,  type:"monthly",  cost:250, startDate:"2026-01-01", location:"Downtown Garage A",  jobId:null, date:null,         notes:"" },
+  { id:3, vehicleId:5,  type:"monthly",  cost:180, startDate:"2026-01-01", location:"Warehouse Lot B",    jobId:null, date:null,         notes:"" },
+  { id:4, vehicleId:9,  type:"monthly",  cost:180, startDate:"2026-02-01", location:"Warehouse Lot B",    jobId:null, date:null,         notes:"" },
+  // One-time (job-level, within March)
+  { id:5, vehicleId:8,  type:"one_time", cost:45,  startDate:null, location:"Convention Center Lot",      jobId:6,    date:"2026-03-15", notes:"All-day parking for corporate move" },
+  { id:6, vehicleId:4,  type:"one_time", cost:60,  startDate:null, location:"Event Venue Lot",            jobId:7,    date:"2026-03-22", notes:"Evening event parking" },
+  { id:7, vehicleId:9,  type:"one_time", cost:20,  startDate:null, location:"Industrial Park",            jobId:8,    date:"2026-03-28", notes:"" },
+  { id:8, vehicleId:10, type:"one_time", cost:35,  startDate:null, location:"Construction Site",          jobId:9,    date:"2026-03-10", notes:"Site parking fee" },
+];
+
+// ═══════════════════════════════════════════
+//  DATA — DRIVERS
+// ═══════════════════════════════════════════
+
+const drivers = [
+  { id:1, name:"James T.",  license:"CA-DL784521", licenseExpiry:"2027-06-15", phone:"555-0101", vehicleId:1,  status:"active"   },
+  { id:2, name:"Karen M.",  license:"CA-DL293847", licenseExpiry:"2026-09-30", phone:"555-0102", vehicleId:3,  status:"active"   },
+  { id:3, name:"Luis R.",   license:"CA-DL847562", licenseExpiry:"2028-02-28", phone:"555-0103", vehicleId:5,  status:"active"   },
+  { id:4, name:"Dana W.",   license:"CA-DL192837", licenseExpiry:"2027-11-20", phone:"555-0104", vehicleId:2,  status:"active"   },
+  { id:5, name:"Tony B.",   license:"CA-DL374819", licenseExpiry:"2026-07-15", phone:"555-0105", vehicleId:4,  status:"active"   },
+  { id:6, name:"Sarah L.",  license:"CA-DL583920", licenseExpiry:"2028-05-10", phone:"555-0106", vehicleId:7,  status:"active"   },
+  { id:7, name:"Mike R.",   license:"CA-DL920183", licenseExpiry:"2027-03-22", phone:"555-0107", vehicleId:null, status:"inactive" },
+];
+
+// Driver cost types: salary, bonus, reimbursement, other
+const driverCosts = [
+  { id:1,  driverId:1, vehicleId:1,  date:"2026-03-31", type:"salary",        amount:3500,  notes:"March salary" },
+  { id:2,  driverId:2, vehicleId:3,  date:"2026-03-31", type:"salary",        amount:3200,  notes:"March salary" },
+  { id:3,  driverId:3, vehicleId:5,  date:"2026-03-31", type:"salary",        amount:3400,  notes:"March salary" },
+  { id:4,  driverId:4, vehicleId:2,  date:"2026-03-31", type:"salary",        amount:3100,  notes:"March salary" },
+  { id:5,  driverId:5, vehicleId:4,  date:"2026-03-31", type:"salary",        amount:3300,  notes:"March salary" },
+  { id:6,  driverId:6, vehicleId:7,  date:"2026-03-31", type:"salary",        amount:3250,  notes:"March salary" },
+  { id:7,  driverId:1, vehicleId:1,  date:"2026-03-15", type:"bonus",         amount:500,   notes:"Airport route performance bonus" },
+  { id:8,  driverId:3, vehicleId:5,  date:"2026-03-20", type:"reimbursement", amount:125,   notes:"Toll fees" },
+  { id:9,  driverId:4, vehicleId:2,  date:"2026-03-10", type:"reimbursement", amount:85,    notes:"Parking fees" },
+];
+
+// ═══════════════════════════════════════════
+//  HELPERS
+// ═══════════════════════════════════════════
+
+const nextId  = arr => arr.length === 0 ? 1 : Math.max(...arr.map(x => x.id)) + 1;
+const fmt$    = v   => "$" + Number(v).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+const fmtN    = v   => Number(v).toLocaleString();
+const badge   = s   => `<span class="badge badge-${s}">${s.replace(/_/g," ")}</span>`;
+const vName   = id  => { const v = vehicles.find(x => x.id === id); return v ? `${v.year} ${v.make} ${v.model}` : "—"; };
+const dName   = id  => { const d = drivers.find(x => x.id === id);  return d ? d.name : "—"; };
+const jName   = id  => { const j = jobs.find(x => x.id === id);     return j ? j.name : "—"; };
+
+const lastSvc = id  => {
+  const e = maintenanceEntries.filter(e => e.vehicleId === id).sort((a,b) => b.date.localeCompare(a.date));
+  return e.length ? e[0].date : "—";
+};
+
+const SERVICE_TYPES = ["Oil Change","Tire Rotation","Brake Service","Air Filter","Battery Replacement",
+                       "Transmission Svc","Engine Repair","30K Service","60K Service","90K Service","Other"];
+
+const DRIVER_COST_TYPES = ["salary","bonus","reimbursement","other"];
+
+// ── Profit helpers ──
+
+function jobRevenueLM(job) {
+  if (job.type === "one_time")
+    return (job.date >= LM_START && job.date <= LM_END) ? job.revenue : 0;
+  if (job.startDate > LM_END) return 0;
+  if (job.recurrence === "daily")   return job.revenue * LM_DAYS;
+  if (job.recurrence === "weekly")  return job.revenue * 4;
+  if (job.recurrence === "monthly") return job.revenue;
+  return 0;
+}
+
+function insuranceMonthlyCost(policy) {
+  return policy.type === "monthly" ? policy.cost : +(policy.cost / 12).toFixed(2);
+}
+
+function vehicleProfitLM(vehicleId) {
+  const rev        = jobs.reduce((s,j) => s + (j.vehicleId === vehicleId ? jobRevenueLM(j) : 0), 0);
+  const maintCost  = maintenanceEntries.filter(e => e.vehicleId === vehicleId && e.date >= LM_START && e.date <= LM_END).reduce((s,e) => s+e.cost, 0);
+  const fuelCost   = fuelEntries.filter(e => e.vehicleId === vehicleId && e.date >= LM_START && e.date <= LM_END).reduce((s,e) => s+e.total, 0);
+  const insCost    = insurancePolicies.filter(p => p.vehicleId === vehicleId).reduce((s,p) => s+insuranceMonthlyCost(p), 0);
+  const mPark      = parkingEntries.filter(p => p.vehicleId === vehicleId && p.type === "monthly").reduce((s,p) => s+p.cost, 0);
+  const otPark     = parkingEntries.filter(p => p.vehicleId === vehicleId && p.type === "one_time" && p.date >= LM_START && p.date <= LM_END).reduce((s,p) => s+p.cost, 0);
+  const parkCost   = mPark + otPark;
+  const driverCost = driverCosts.filter(c => c.vehicleId === vehicleId && c.date >= LM_START && c.date <= LM_END).reduce((s,c) => s+c.amount, 0);
+  const costs      = maintCost + fuelCost + insCost + parkCost + driverCost;
+  return { rev, costs, profit: rev-costs, maintCost, fuelCost, insCost, parkCost, driverCost };
+}
+
+function jobProfitLM(job) {
+  const rev = jobRevenueLM(job);
+  if (rev === 0) return { rev:0, costs:0, profit:0 };
+  const vp = vehicleProfitLM(job.vehicleId);
+  const share = vp.rev > 0 ? (rev / vp.rev) * vp.costs : 0;
+  return { rev, costs: share, profit: rev - share };
+}
+
+// ═══════════════════════════════════════════
+//  MODAL UTILITIES
+// ═══════════════════════════════════════════
+
+function openModal(html, onSubmit) {
+  const overlay = document.createElement("div");
+  overlay.className = "modal-overlay";
+  overlay.innerHTML = `<div class="modal-box">${html}</div>`;
+  document.body.appendChild(overlay);
+  const close = () => document.body.removeChild(overlay);
+  const form = overlay.querySelector("form");
+  if (form) form.addEventListener("submit", e => { e.preventDefault(); onSubmit(new FormData(form)); close(); });
+  overlay.querySelector(".modal-cancel")?.addEventListener("click", close);
+  overlay.addEventListener("click", e => { if (e.target === overlay) close(); });
+}
+
+function openInfoModal(html) {
+  const overlay = document.createElement("div");
+  overlay.className = "modal-overlay";
+  overlay.innerHTML = `<div class="modal-box">${html}</div>`;
+  document.body.appendChild(overlay);
+  overlay.querySelector(".modal-cancel")?.addEventListener("click", () => document.body.removeChild(overlay));
+  overlay.addEventListener("click", e => { if (e.target === overlay) document.body.removeChild(overlay); });
+}
+
+// ── Select helpers ──
+function vehicleOptions(sel) {
+  return vehicles.map(v => `<option value="${v.id}"${v.id===sel?" selected":""}>${v.year} ${v.make} ${v.model}</option>`).join("");
+}
+function driverOptions(sel) {
+  return `<option value="">— Unassigned —</option>` +
+    drivers.map(d => `<option value="${d.id}"${d.id===sel?" selected":""}>${d.name}</option>`).join("");
+}
+function jobOptions(sel) {
+  return `<option value="">— No job —</option>` +
+    jobs.map(j => `<option value="${j.id}"${j.id===sel?" selected":""}>${j.name}</option>`).join("");
+}
+
+// ═══════════════════════════════════════════
+//  COST BREAKDOWN MODAL
+// ═══════════════════════════════════════════
+
+function showCostBreakdown(vehicleId) {
+  const v  = vehicles.find(x => x.id === vehicleId);
+  const vp = vehicleProfitLM(vehicleId);
+  const margin = vp.rev > 0 ? (vp.profit / vp.rev * 100).toFixed(1) + "%" : "—";
+  const pCls = vp.profit >= 0 ? "profit-pos" : "profit-neg";
+  openInfoModal(`
+    <h2>${v.year} ${v.make} ${v.model} — March 2026</h2>
+    <div class="detail-section" style="margin-top:0">
+      <h3>Revenue</h3>
+      <div class="cost-row"><span>Jobs revenue</span><span>${fmt$(vp.rev)}</span></div>
+    </div>
+    <div class="detail-section">
+      <h3>Cost Breakdown</h3>
+      <div class="cost-row"><span>Maintenance</span><span class="text-muted">${fmt$(vp.maintCost)}</span></div>
+      <div class="cost-row"><span>Fuel</span><span class="text-muted">${fmt$(vp.fuelCost)}</span></div>
+      <div class="cost-row"><span>Insurance</span><span class="text-muted">${fmt$(vp.insCost)}</span></div>
+      <div class="cost-row"><span>Parking</span><span class="text-muted">${fmt$(vp.parkCost)}</span></div>
+      <div class="cost-row"><span>Driver costs</span><span class="text-muted">${fmt$(vp.driverCost)}</span></div>
+      <div class="cost-row total"><span>Total Costs</span><span>${fmt$(vp.costs)}</span></div>
+    </div>
+    <div class="detail-section">
+      <div class="cost-row profit-line ${pCls}"><span>Net Profit</span><span>${fmt$(vp.profit)}</span></div>
+      <div class="cost-row" style="font-size:0.82rem"><span class="text-muted">Margin</span><span class="${pCls}">${margin}</span></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-ghost modal-cancel">Close</button></div>
+  `);
+}
+
+// ═══════════════════════════════════════════
+//  TAB: DASHBOARD
+// ═══════════════════════════════════════════
+
+function renderDashboard() {
+  const active = vehicles.filter(v => v.status === "active").length;
+  const maint  = vehicles.filter(v => v.status === "maintenance").length;
+  const out    = vehicles.filter(v => v.status === "out_of_service").length;
+  const total  = vehicles.length;
+
+  const totalMaintCost = maintenanceEntries.reduce((s,e) => s+e.cost, 0);
+  const totalFuelCost  = fuelEntries.reduce((s,e) => s+e.total, 0);
+  const recentMaint = [...maintenanceEntries].sort((a,b) => b.date.localeCompare(a.date)).slice(0,5);
+  const recentFuel  = [...fuelEntries].sort((a,b) => b.date.localeCompare(a.date)).slice(0,5);
+
+  const apct = Math.round(active / total * 100);
+  const mpct = Math.round(maint  / total * 100);
+  const opct = 100 - apct - mpct;
+
+  // Vehicle profitability (March)
+  const vRows = vehicles.map(v => ({ v, ...vehicleProfitLM(v.id) })).sort((a,b) => b.profit - a.profit);
+
+  // Job profitability (March)
+  const jRows = jobs.map(j => ({ j, ...jobProfitLM(j) })).filter(r => r.rev > 0).sort((a,b) => b.profit - a.profit);
+
+  document.getElementById("tab-dashboard").innerHTML = `
+    <div class="page-header">
+      <div><h1>Dashboard</h1><p>Fleet overview — ${total} vehicles total</p></div>
+    </div>
+
+    <div class="stat-grid">
+      <div class="stat-card"><div class="icon">🚗</div><div class="val">${total}</div><div class="lbl">Total Vehicles</div></div>
+      <div class="stat-card"><div class="icon">✅</div><div class="val" style="color:#16a34a">${active}</div><div class="lbl">Active</div></div>
+      <div class="stat-card"><div class="icon">🔧</div><div class="val" style="color:#d97706">${maint}</div><div class="lbl">In Maintenance</div></div>
+      <div class="stat-card"><div class="icon">🚫</div><div class="val" style="color:#dc2626">${out}</div><div class="lbl">Out of Service</div></div>
+    </div>
+
+    <div class="card" style="margin-bottom:1rem">
+      <div class="card-title">Fleet Health</div>
+      <div class="health-bar">
+        <div class="seg" style="width:${apct}%;background:#22c55e"></div>
+        <div class="seg" style="width:${mpct}%;background:#f59e0b"></div>
+        <div class="seg" style="width:${opct}%;background:#ef4444"></div>
+      </div>
+      <div style="display:flex;gap:1.5rem;font-size:0.78rem;color:var(--muted)">
+        <span><span style="color:#22c55e">●</span> Active ${apct}%</span>
+        <span><span style="color:#f59e0b">●</span> Maintenance ${mpct}%</span>
+        <span><span style="color:#ef4444">●</span> Out of Service ${opct}%</span>
+      </div>
+      <div style="display:flex;gap:2rem;margin-top:1rem">
+        <div><div style="font-size:1.3rem;font-weight:700">${fmt$(totalMaintCost)}</div><div style="font-size:0.78rem;color:var(--muted)">Total maintenance spend</div></div>
+        <div><div style="font-size:1.3rem;font-weight:700">${fmt$(totalFuelCost)}</div><div style="font-size:0.78rem;color:var(--muted)">Total fuel spend</div></div>
+        <div><div style="font-size:1.3rem;font-weight:700">${maintenanceEntries.length}</div><div style="font-size:0.78rem;color:var(--muted)">Service entries</div></div>
+        <div><div style="font-size:1.3rem;font-weight:700">${fuelEntries.length}</div><div style="font-size:0.78rem;color:var(--muted)">Fuel fill-ups</div></div>
+      </div>
+    </div>
+
+    <div class="two-col">
+      <div class="card">
+        <div class="card-title">Recent Maintenance</div>
+        <table><thead><tr><th>Date</th><th>Vehicle</th><th>Service</th><th>Cost</th></tr></thead>
+        <tbody>${recentMaint.map(e => `<tr><td class="text-muted">${e.date}</td><td>${vName(e.vehicleId)}</td><td>${e.type}</td><td>${fmt$(e.cost)}</td></tr>`).join("")}</tbody></table>
+      </div>
+      <div class="card">
+        <div class="card-title">Recent Fuel Entries</div>
+        <table><thead><tr><th>Date</th><th>Vehicle</th><th>Gallons</th><th>Cost</th></tr></thead>
+        <tbody>${recentFuel.map(e => `<tr><td class="text-muted">${e.date}</td><td>${vName(e.vehicleId)}</td><td>${e.gallons.toFixed(1)}</td><td>${fmt$(e.total)}</td></tr>`).join("")}</tbody></table>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:1rem">
+      <div class="card-title">Vehicle Profitability — March 2026
+        <span class="card-subtitle">Includes maintenance, fuel, insurance, parking &amp; driver costs. Click row for breakdown.</span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Vehicle</th><th>Driver</th><th>Revenue</th><th>Maint</th><th>Fuel</th><th>Insurance</th><th>Parking</th><th>Drivers</th><th>Profit</th><th>Margin</th></tr></thead>
+          <tbody>
+            ${vRows.map(r => {
+              const margin = r.rev > 0 ? (r.profit/r.rev*100).toFixed(1)+"%" : "—";
+              const cls = r.profit >= 0 ? "profit-pos" : "profit-neg";
+              const primaryDriver = drivers.find(d => d.vehicleId === r.v.id);
+              return `<tr style="cursor:pointer" onclick="showCostBreakdown(${r.v.id})">
+                <td><strong>${r.v.year} ${r.v.make} ${r.v.model}</strong></td>
+                <td class="text-muted">${primaryDriver ? primaryDriver.name : "—"}</td>
+                <td>${r.rev > 0 ? fmt$(r.rev) : '<span class="text-muted">$0</span>'}</td>
+                <td class="text-muted">${r.maintCost > 0 ? fmt$(r.maintCost) : "—"}</td>
+                <td class="text-muted">${r.fuelCost > 0 ? fmt$(r.fuelCost) : "—"}</td>
+                <td class="text-muted">${fmt$(r.insCost)}</td>
+                <td class="text-muted">${r.parkCost > 0 ? fmt$(r.parkCost) : "—"}</td>
+                <td class="text-muted">${r.driverCost > 0 ? fmt$(r.driverCost) : "—"}</td>
+                <td class="${cls}">${fmt$(r.profit)}</td>
+                <td class="${cls}">${margin}</td>
+              </tr>`;
+            }).join("")}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:1rem">
+      <div class="card-title">Job Profitability — March 2026
+        <span class="card-subtitle">Cost share = proportional slice of vehicle's total March costs</span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Job</th><th>Type</th><th>Vehicle</th><th>Revenue</th><th>Cost Share</th><th>Profit</th><th>Schedule</th></tr></thead>
+          <tbody>
+            ${jRows.length === 0 ? '<tr><td colspan="7" class="empty">No jobs ran in March 2026.</td></tr>' :
+              jRows.map(r => {
+                const cls = r.profit >= 0 ? "profit-pos" : "profit-neg";
+                const schedule = r.j.type === "route"
+                  ? `${r.j.recurrence} · ${r.j.startTime}–${r.j.endTime}`
+                  : `${r.j.date} · ${r.j.startTime}–${r.j.endTime}`;
+                return `<tr>
+                  <td><strong>${r.j.name}</strong></td>
+                  <td>${badge(r.j.type)}</td>
+                  <td>${vName(r.j.vehicleId)}</td>
+                  <td>${fmt$(r.rev)}</td>
+                  <td class="text-muted">${fmt$(r.costs)}</td>
+                  <td class="${cls}">${fmt$(r.profit)}</td>
+                  <td class="text-muted" style="font-size:0.78rem">${schedule}</td>
+                </tr>`;
+              }).join("")}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+
+// ═══════════════════════════════════════════
+//  TAB: VEHICLES
+// ═══════════════════════════════════════════
+
+let vSearch = "", vStatus = "";
+
+function renderVehicles() {
+  const list = vehicles.filter(v => {
+    const matchText   = !vSearch || [v.year, v.make, v.model, v.vin].join(" ").toLowerCase().includes(vSearch.toLowerCase());
+    const matchStatus = !vStatus || v.status === vStatus;
+    return matchText && matchStatus;
+  });
+
+  const totalInsCost  = insurancePolicies.reduce((s,p) => s + insuranceMonthlyCost(p), 0);
+  const totalParkCost = parkingEntries.filter(p => p.type === "monthly").reduce((s,p) => s + p.cost, 0);
+
+  document.getElementById("tab-vehicles").innerHTML = `
+    <div class="page-header">
+      <div><h1>Vehicles</h1><p>${vehicles.length} vehicles in fleet</p></div>
+    </div>
+    <div class="filter-bar">
+      <input id="v-search" placeholder="Search make, model, VIN…" value="${vSearch}" />
+      <select id="v-status">
+        <option value="">All Statuses</option>
+        <option value="active"${vStatus==="active"?" selected":""}>Active</option>
+        <option value="maintenance"${vStatus==="maintenance"?" selected":""}>Maintenance</option>
+        <option value="out_of_service"${vStatus==="out_of_service"?" selected":""}>Out of Service</option>
+      </select>
+    </div>
+    <div class="card">
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Vehicle</th><th>VIN</th><th>Status</th><th>Mileage</th><th>Driver</th><th>Insurance/mo</th><th>Parking/mo</th><th>Last Service</th><th></th></tr></thead>
+          <tbody>
+            ${list.length === 0 ? `<tr><td colspan="9" class="empty">No vehicles match your filters.</td></tr>` :
+              list.map(v => {
+                const d    = drivers.find(d => d.vehicleId === v.id);
+                const ins  = insurancePolicies.filter(p => p.vehicleId === v.id).reduce((s,p) => s+insuranceMonthlyCost(p), 0);
+                const park = parkingEntries.filter(p => p.vehicleId === v.id && p.type === "monthly").reduce((s,p) => s+p.cost, 0);
+                return `<tr>
+                  <td><strong>${v.year} ${v.make} ${v.model}</strong></td>
+                  <td class="text-muted" style="font-family:monospace;font-size:0.78rem">${v.vin}</td>
+                  <td>${badge(v.status)}</td>
+                  <td>${fmtN(v.mileage)} mi</td>
+                  <td>${d ? d.name : '<span class="text-muted">—</span>'}</td>
+                  <td>${ins > 0 ? fmt$(ins) : '<span class="text-muted">—</span>'}</td>
+                  <td>${park > 0 ? fmt$(park) : '<span class="text-muted">—</span>'}</td>
+                  <td class="text-muted">${lastSvc(v.id)}</td>
+                  <td class="text-right"><button class="btn btn-info btn-sm" onclick="showVehicleDetail(${v.id})">View</button></td>
+                </tr>`;
+              }).join("")}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Insurance Policies -->
+    <div class="card section-gap">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+        <div>
+          <span class="card-title" style="margin-bottom:0">Insurance Policies</span>
+          <span class="card-subtitle">Fleet total: ${fmt$(totalInsCost)}/mo</span>
+        </div>
+        <button class="btn btn-primary btn-sm" id="add-ins-btn">+ Add Policy</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Vehicle</th><th>Provider</th><th>Type</th><th>Policy Cost</th><th>Monthly Cost</th><th>Start Date</th><th>Notes</th><th></th></tr></thead>
+          <tbody>
+            ${insurancePolicies.length === 0 ? `<tr><td colspan="8" class="empty">No policies yet.</td></tr>` :
+              insurancePolicies.map(p => `<tr>
+                <td>${vName(p.vehicleId)}</td>
+                <td><strong>${p.provider}</strong></td>
+                <td>${badge(p.type)}</td>
+                <td>${fmt$(p.cost)}${p.type==="yearly"?'<span class="text-muted" style="font-size:0.75rem">/yr</span>':'<span class="text-muted" style="font-size:0.75rem">/mo</span>'}</td>
+                <td>${fmt$(insuranceMonthlyCost(p))}</td>
+                <td class="text-muted">${p.startDate}</td>
+                <td class="text-muted">${p.notes||"—"}</td>
+                <td><button class="btn btn-danger btn-sm" onclick="deleteInsurance(${p.id})">Delete</button></td>
+              </tr>`).join("")}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Monthly Parking -->
+    <div class="card section-gap">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+        <div>
+          <span class="card-title" style="margin-bottom:0">Monthly Parking</span>
+          <span class="card-subtitle">Fleet total: ${fmt$(totalParkCost)}/mo</span>
+        </div>
+        <button class="btn btn-primary btn-sm" id="add-mpark-btn">+ Add Parking</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Vehicle</th><th>Location</th><th>Cost/mo</th><th>Since</th><th>Notes</th><th></th></tr></thead>
+          <tbody>
+            ${parkingEntries.filter(p => p.type === "monthly").length === 0
+              ? `<tr><td colspan="6" class="empty">No monthly parking entries yet.</td></tr>`
+              : parkingEntries.filter(p => p.type === "monthly").map(p => `<tr>
+                  <td>${vName(p.vehicleId)}</td>
+                  <td>${p.location}</td>
+                  <td><strong>${fmt$(p.cost)}</strong></td>
+                  <td class="text-muted">${p.startDate}</td>
+                  <td class="text-muted">${p.notes||"—"}</td>
+                  <td><button class="btn btn-danger btn-sm" onclick="deleteParking(${p.id})">Delete</button></td>
+                </tr>`).join("")}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+
+  document.getElementById("v-search").addEventListener("input", e => { vSearch = e.target.value; renderVehicles(); });
+  document.getElementById("v-status").addEventListener("change", e => { vStatus = e.target.value; renderVehicles(); });
+
+  // Add Insurance
+  document.getElementById("add-ins-btn").addEventListener("click", () => {
+    const today = new Date().toISOString().slice(0,10);
+    openModal(`
+      <h2>Add Insurance Policy</h2>
+      <form>
+        <div class="form-group"><label>Vehicle</label><select name="vehicleId">${vehicleOptions()}</select></div>
+        <div class="form-row">
+          <div class="form-group"><label>Provider</label><input type="text" name="provider" placeholder="e.g. Geico" required /></div>
+          <div class="form-group"><label>Type</label><select name="type"><option value="monthly">Monthly</option><option value="yearly">Yearly</option></select></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Cost ($)</label><input type="number" name="cost" step="0.01" placeholder="e.g. 180 or 2160" required /></div>
+          <div class="form-group"><label>Start Date</label><input type="date" name="startDate" value="${today}" /></div>
+        </div>
+        <div class="form-group"><label>Notes</label><input type="text" name="notes" placeholder="e.g. Comprehensive" /></div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ghost modal-cancel">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Policy</button>
+        </div>
+      </form>
+    `, fd => {
+      insurancePolicies.push({ id: nextId(insurancePolicies),
+        vehicleId: Number(fd.get("vehicleId")), provider: fd.get("provider"),
+        type: fd.get("type"), cost: Number(fd.get("cost")),
+        startDate: fd.get("startDate"), notes: fd.get("notes")||"" });
+      renderVehicles();
+    });
+  });
+
+  // Add Monthly Parking
+  document.getElementById("add-mpark-btn").addEventListener("click", () => {
+    const today = new Date().toISOString().slice(0,10);
+    openModal(`
+      <h2>Add Monthly Parking</h2>
+      <form>
+        <div class="form-row">
+          <div class="form-group"><label>Vehicle</label><select name="vehicleId">${vehicleOptions()}</select></div>
+          <div class="form-group"><label>Cost/mo ($)</label><input type="number" name="cost" step="0.01" required /></div>
+        </div>
+        <div class="form-group"><label>Location</label><input type="text" name="location" placeholder="e.g. Downtown Garage A" required /></div>
+        <div class="form-group"><label>Start Date</label><input type="date" name="startDate" value="${today}" /></div>
+        <div class="form-group"><label>Notes</label><input type="text" name="notes" placeholder="Optional" /></div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ghost modal-cancel">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save</button>
+        </div>
+      </form>
+    `, fd => {
+      parkingEntries.push({ id: nextId(parkingEntries),
+        vehicleId: Number(fd.get("vehicleId")), type: "monthly",
+        cost: Number(fd.get("cost")), location: fd.get("location"),
+        startDate: fd.get("startDate"), date: null, jobId: null,
+        notes: fd.get("notes")||"" });
+      renderVehicles();
+    });
+  });
+}
+
+function deleteInsurance(id) {
+  if (!confirm("Delete this policy?")) return;
+  const idx = insurancePolicies.findIndex(p => p.id === id);
+  if (idx !== -1) insurancePolicies.splice(idx, 1);
+  renderVehicles();
+}
+
+function deleteParking(id) {
+  if (!confirm("Delete this parking entry?")) return;
+  const idx = parkingEntries.findIndex(p => p.id === id);
+  if (idx !== -1) parkingEntries.splice(idx, 1);
+  // re-render the correct tab based on which one is visible
+  const jobsVisible = document.getElementById("tab-jobs").style.display === "block";
+  jobsVisible ? renderJobs() : renderVehicles();
+}
+
+function showVehicleDetail(id) {
+  const v    = vehicles.find(x => x.id === id);
+  const mnt  = maintenanceEntries.filter(e => e.vehicleId === id).sort((a,b) => b.date.localeCompare(a.date));
+  const fu   = fuelEntries.filter(e => e.vehicleId === id).sort((a,b) => b.date.localeCompare(a.date));
+  const insp = inspections.filter(e => e.vehicleId === id).sort((a,b) => b.date.localeCompare(a.date));
+  const vp   = vehicleProfitLM(id);
+  const pCls = vp.profit >= 0 ? "profit-pos" : "profit-neg";
+
+  openInfoModal(`
+    <h2>${v.year} ${v.make} ${v.model}</h2>
+    <div style="display:flex;gap:0.75rem;margin-bottom:1.25rem">
+      ${badge(v.status)}
+      <span class="text-muted" style="font-size:0.85rem">${fmtN(v.mileage)} mi &nbsp;|&nbsp; ${v.color} &nbsp;|&nbsp; VIN: ${v.vin}</span>
+    </div>
+    <div class="detail-section" style="margin-top:0">
+      <h3>March 2026 Profitability</h3>
+      <div class="cost-row"><span>Revenue</span><span>${fmt$(vp.rev)}</span></div>
+      <div class="cost-row"><span class="text-muted" style="padding-left:0.75rem">↳ Maintenance</span><span class="text-muted">${fmt$(vp.maintCost)}</span></div>
+      <div class="cost-row"><span class="text-muted" style="padding-left:0.75rem">↳ Fuel</span><span class="text-muted">${fmt$(vp.fuelCost)}</span></div>
+      <div class="cost-row"><span class="text-muted" style="padding-left:0.75rem">↳ Insurance</span><span class="text-muted">${fmt$(vp.insCost)}</span></div>
+      <div class="cost-row"><span class="text-muted" style="padding-left:0.75rem">↳ Parking</span><span class="text-muted">${fmt$(vp.parkCost)}</span></div>
+      <div class="cost-row"><span class="text-muted" style="padding-left:0.75rem">↳ Drivers</span><span class="text-muted">${fmt$(vp.driverCost)}</span></div>
+      <div class="cost-row total"><span>Total Costs</span><span>${fmt$(vp.costs)}</span></div>
+      <div class="cost-row profit-line ${pCls}"><span>Net Profit</span><span>${fmt$(vp.profit)}</span></div>
+    </div>
+    <div class="detail-section">
+      <h3>Maintenance (${mnt.length} entries)</h3>
+      ${mnt.length === 0 ? `<p class="text-muted" style="font-size:0.85rem">No records.</p>` :
+        mnt.map(e => `<div class="detail-item"><span>${e.date} — ${e.type}</span><span>${fmt$(e.cost)}</span></div>`).join("")}
+    </div>
+    <div class="detail-section mt-1">
+      <h3>Fuel Log (${fu.length} fill-ups)</h3>
+      ${fu.length === 0 ? `<p class="text-muted" style="font-size:0.85rem">No records.</p>` :
+        fu.map(e => `<div class="detail-item"><span>${e.date} — ${e.gallons.toFixed(1)} gal</span><span>${fmt$(e.total)}</span></div>`).join("")}
+    </div>
+    <div class="detail-section mt-1">
+      <h3>Inspections (${insp.length} total)</h3>
+      ${insp.length === 0 ? `<p class="text-muted" style="font-size:0.85rem">No records.</p>` :
+        insp.map(e => `<div class="detail-item"><span>${e.date} — ${e.driver}</span>${badge(e.pass?"pass":"fail")}</div>`).join("")}
+    </div>
+    <div class="modal-footer"><button class="btn btn-ghost modal-cancel">Close</button></div>
+  `);
+}
+
+// ═══════════════════════════════════════════
+//  TAB: JOBS
+// ═══════════════════════════════════════════
+
+let jSearch = "", jTypeFilter = "";
+
+function renderJobs() {
+  const list = jobs.filter(j => {
+    const matchText = !jSearch || j.name.toLowerCase().includes(jSearch.toLowerCase()) || vName(j.vehicleId).toLowerCase().includes(jSearch.toLowerCase());
+    const matchType = !jTypeFilter || j.type === jTypeFilter;
+    return matchText && matchType;
+  });
+
+  const totalOTPark = parkingEntries.filter(p => p.type === "one_time").reduce((s,p) => s+p.cost, 0);
+
+  document.getElementById("tab-jobs").innerHTML = `
+    <div class="page-header">
+      <div><h1>Jobs</h1><p>${jobs.length} jobs — ${jobs.filter(j=>j.type==="route").length} routes, ${jobs.filter(j=>j.type==="one_time").length} one-time</p></div>
+      <button class="btn btn-primary" id="add-job-btn">+ Add Job</button>
+    </div>
+    <div class="filter-bar">
+      <input id="j-search" placeholder="Search job name or vehicle…" value="${jSearch}" />
+      <select id="j-type">
+        <option value="">All Types</option>
+        <option value="route"${jTypeFilter==="route"?" selected":""}>Route</option>
+        <option value="one_time"${jTypeFilter==="one_time"?" selected":""}>One-time</option>
+      </select>
+    </div>
+    <div class="card">
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Name</th><th>Type</th><th>Vehicle</th><th>Driver</th><th>Revenue</th><th>Parking</th><th>Schedule</th><th>Status</th><th></th></tr></thead>
+          <tbody>
+            ${list.length === 0 ? `<tr><td colspan="9" class="empty">No jobs match your filters.</td></tr>` :
+              list.map(j => {
+                const schedule = j.type === "route"
+                  ? `${j.recurrence.charAt(0).toUpperCase()+j.recurrence.slice(1)} · ${j.startTime}–${j.endTime}`
+                  : `${j.date} · ${j.startTime}–${j.endTime}`;
+                const revLabel = j.type === "route"
+                  ? `${fmt$(j.revenue)}<span class="text-muted" style="font-size:0.75rem"> /${j.recurrence.replace("ly","")}</span>`
+                  : fmt$(j.revenue);
+                const parking = parkingEntries.filter(p => p.jobId === j.id).reduce((s,p) => s+p.cost, 0);
+                const parkLabel = parking > 0
+                  ? `<span style="color:var(--danger)">${fmt$(parking)}</span>`
+                  : `<span class="text-muted">—</span>`;
+                return `<tr>
+                  <td><strong>${j.name}</strong></td>
+                  <td>${badge(j.type)}</td>
+                  <td>${vName(j.vehicleId)}</td>
+                  <td>${j.driverId ? dName(j.driverId) : '<span class="text-muted">—</span>'}</td>
+                  <td>${revLabel}</td>
+                  <td>${parkLabel}</td>
+                  <td class="text-muted" style="font-size:0.82rem">${schedule}</td>
+                  <td>${badge(j.status)}</td>
+                  <td><button class="btn btn-danger btn-sm" onclick="deleteJob(${j.id})">Delete</button></td>
+                </tr>`;
+              }).join("")}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- One-time Parking -->
+    <div class="card section-gap">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+        <div>
+          <span class="card-title" style="margin-bottom:0">One-time Job Parking</span>
+          <span class="card-subtitle">Total logged: ${fmt$(totalOTPark)}</span>
+        </div>
+        <button class="btn btn-primary btn-sm" id="add-otpark-btn">+ Add Parking</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Date</th><th>Job</th><th>Vehicle</th><th>Location</th><th>Cost</th><th>Notes</th><th></th></tr></thead>
+          <tbody>
+            ${parkingEntries.filter(p => p.type === "one_time").length === 0
+              ? `<tr><td colspan="7" class="empty">No one-time parking entries yet.</td></tr>`
+              : parkingEntries.filter(p => p.type === "one_time").sort((a,b) => b.date.localeCompare(a.date)).map(p => `<tr>
+                  <td class="text-muted">${p.date}</td>
+                  <td>${p.jobId ? jName(p.jobId) : '<span class="text-muted">—</span>'}</td>
+                  <td>${vName(p.vehicleId)}</td>
+                  <td>${p.location}</td>
+                  <td><strong>${fmt$(p.cost)}</strong></td>
+                  <td class="text-muted">${p.notes||"—"}</td>
+                  <td><button class="btn btn-danger btn-sm" onclick="deleteParking(${p.id})">Delete</button></td>
+                </tr>`).join("")}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+
+  document.getElementById("j-search").addEventListener("input", e => { jSearch = e.target.value; renderJobs(); });
+  document.getElementById("j-type").addEventListener("change", e => { jTypeFilter = e.target.value; renderJobs(); });
+
+  document.getElementById("add-job-btn").addEventListener("click", () => {
+    const today = new Date().toISOString().slice(0,10);
+    openModal(`
+      <h2>Add Job</h2>
+      <form>
+        <div class="form-group">
+          <label>Job Name</label>
+          <input type="text" name="name" placeholder="e.g. Airport Shuttle Route A" required />
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Vehicle</label>
+            <select name="vehicleId">${vehicleOptions()}</select>
+          </div>
+          <div class="form-group">
+            <label>Driver</label>
+            <select name="driverId">${driverOptions()}</select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Revenue ($)</label>
+            <input type="number" name="revenue" step="0.01" placeholder="e.g. 350.00" required />
+          </div>
+          <div class="form-group">
+            <label>Type</label>
+            <div class="radio-group" style="margin-top:0.5rem">
+              <label><input type="radio" name="type" value="route" id="type-route" checked /> Route</label>
+              <label><input type="radio" name="type" value="one_time" id="type-onetime" /> One-time</label>
+            </div>
+          </div>
+        </div>
+        <div id="route-fields">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Recurrence</label>
+              <select name="recurrence"><option value="daily">Daily</option><option value="weekly">Weekly</option><option value="monthly">Monthly</option></select>
+            </div>
+            <div class="form-group">
+              <label>Route Start Date</label>
+              <input type="date" name="startDate" value="${today}" />
+            </div>
+          </div>
+        </div>
+        <div id="onetime-fields" style="display:none">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Date</label>
+              <input type="date" name="date" value="${today}" />
+            </div>
+            <div class="form-group">
+              <label>Status</label>
+              <select name="otStatus"><option value="scheduled">Scheduled</option><option value="completed">Completed</option></select>
+            </div>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Start Time</label><input type="time" name="startTime" value="08:00" required /></div>
+          <div class="form-group"><label>End Time</label><input type="time" name="endTime" value="17:00" required /></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ghost modal-cancel">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Job</button>
+        </div>
+      </form>
+    `, fd => {
+      const type = fd.get("type");
+      const dId  = fd.get("driverId") ? Number(fd.get("driverId")) : null;
+      jobs.push({
+        id: nextId(jobs), name: fd.get("name"), type,
+        vehicleId: Number(fd.get("vehicleId")), driverId: dId,
+        revenue: Number(fd.get("revenue")),
+        startTime: fd.get("startTime"), endTime: fd.get("endTime"),
+        ...(type === "route"
+          ? { recurrence: fd.get("recurrence"), startDate: fd.get("startDate"), status:"active" }
+          : { date: fd.get("date"), status: fd.get("otStatus") }),
+      });
+      renderJobs();
+    });
+
+    setTimeout(() => {
+      const rf = document.getElementById("route-fields"), ot = document.getElementById("onetime-fields");
+      document.getElementById("type-route").addEventListener("change", () => { rf.style.display=""; ot.style.display="none"; });
+      document.getElementById("type-onetime").addEventListener("change", () => { rf.style.display="none"; ot.style.display=""; });
+    }, 0);
+  });
+
+  // Add one-time parking
+  document.getElementById("add-otpark-btn").addEventListener("click", () => {
+    const today = new Date().toISOString().slice(0,10);
+    openModal(`
+      <h2>Add Job Parking</h2>
+      <form>
+        <div class="form-row">
+          <div class="form-group"><label>Linked Job (optional)</label><select name="jobId">${jobOptions()}</select></div>
+          <div class="form-group"><label>Vehicle</label><select name="vehicleId">${vehicleOptions()}</select></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Date</label><input type="date" name="date" value="${today}" required /></div>
+          <div class="form-group"><label>Cost ($)</label><input type="number" name="cost" step="0.01" required /></div>
+        </div>
+        <div class="form-group"><label>Location</label><input type="text" name="location" placeholder="e.g. Convention Center Lot" required /></div>
+        <div class="form-group"><label>Notes</label><input type="text" name="notes" placeholder="Optional" /></div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ghost modal-cancel">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save</button>
+        </div>
+      </form>
+    `, fd => {
+      const jobId = fd.get("jobId") ? Number(fd.get("jobId")) : null;
+      parkingEntries.push({ id: nextId(parkingEntries),
+        vehicleId: Number(fd.get("vehicleId")), type: "one_time",
+        cost: Number(fd.get("cost")), location: fd.get("location"),
+        startDate: null, date: fd.get("date"), jobId,
+        notes: fd.get("notes")||"" });
+      renderJobs();
+    });
+  });
+}
+
+function deleteJob(id) {
+  if (!confirm("Delete this job?")) return;
+  const idx = jobs.findIndex(j => j.id === id);
+  if (idx !== -1) jobs.splice(idx, 1);
+  renderJobs();
+}
+
+// ═══════════════════════════════════════════
+//  TAB: MAINTENANCE
+// ═══════════════════════════════════════════
+
+function renderMaintenance() {
+  const sorted = [...maintenanceEntries].sort((a,b) => b.date.localeCompare(a.date));
+  document.getElementById("tab-maintenance").innerHTML = `
+    <div class="page-header">
+      <div><h1>Maintenance</h1><p>${maintenanceEntries.length} service entries logged</p></div>
+      <button class="btn btn-primary" id="add-maint-btn">+ Add Entry</button>
+    </div>
+    <div class="card">
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Date</th><th>Vehicle</th><th>Service Type</th><th>Mileage</th><th>Cost</th><th>Technician</th><th>Notes</th><th></th></tr></thead>
+          <tbody>
+            ${sorted.map(e => `<tr>
+              <td class="text-muted">${e.date}</td><td>${vName(e.vehicleId)}</td><td>${e.type}</td>
+              <td>${fmtN(e.mileage)} mi</td><td>${fmt$(e.cost)}</td><td>${e.tech}</td>
+              <td class="text-muted" style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${e.notes||"—"}</td>
+              <td><button class="btn btn-danger btn-sm" onclick="deleteMaint(${e.id})">Delete</button></td>
+            </tr>`).join("")}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+
+  document.getElementById("add-maint-btn").addEventListener("click", () => {
+    const today = new Date().toISOString().slice(0,10);
+    openModal(`
+      <h2>Add Maintenance Entry</h2>
+      <form>
+        <div class="form-group"><label>Vehicle</label><select name="vehicleId">${vehicleOptions()}</select></div>
+        <div class="form-row">
+          <div class="form-group"><label>Date</label><input type="date" name="date" value="${today}" required /></div>
+          <div class="form-group"><label>Service Type</label><select name="type">${SERVICE_TYPES.map(t=>`<option>${t}</option>`).join("")}</select></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Mileage</label><input type="number" name="mileage" placeholder="e.g. 35000" required /></div>
+          <div class="form-group"><label>Cost ($)</label><input type="number" name="cost" step="0.01" placeholder="e.g. 89.99" required /></div>
+        </div>
+        <div class="form-group"><label>Technician</label><input type="text" name="tech" placeholder="Name" /></div>
+        <div class="form-group"><label>Notes</label><textarea name="notes" placeholder="Optional notes…"></textarea></div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ghost modal-cancel">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Entry</button>
+        </div>
+      </form>
+    `, fd => {
+      maintenanceEntries.push({
+        id: nextId(maintenanceEntries), vehicleId: Number(fd.get("vehicleId")),
+        date: fd.get("date"), type: fd.get("type"),
+        mileage: Number(fd.get("mileage")), cost: Number(fd.get("cost")),
+        tech: fd.get("tech")||"—", notes: fd.get("notes")||"",
+      });
+      renderMaintenance();
+    });
+  });
+}
+
+function deleteMaint(id) {
+  if (!confirm("Delete this entry?")) return;
+  const idx = maintenanceEntries.findIndex(e => e.id === id);
+  if (idx !== -1) maintenanceEntries.splice(idx, 1);
+  renderMaintenance();
+}
+
+// ═══════════════════════════════════════════
+//  TAB: FUEL LOG
+// ═══════════════════════════════════════════
+
+function renderFuel() {
+  const sorted = [...fuelEntries].sort((a,b) => b.date.localeCompare(a.date));
+  const totalGal  = fuelEntries.reduce((s,e) => s+e.gallons, 0);
+  const totalCost = fuelEntries.reduce((s,e) => s+e.total, 0);
+  const avgCpg    = totalGal > 0 ? totalCost / totalGal : 0;
+
+  document.getElementById("tab-fuel").innerHTML = `
+    <div class="page-header">
+      <div><h1>Fuel Log</h1><p>${fuelEntries.length} fill-ups recorded</p></div>
+      <button class="btn btn-primary" id="add-fuel-btn">+ Add Fill-up</button>
+    </div>
+    <div class="chip-row">
+      <div class="chip"><div class="c-val">${totalGal.toFixed(1)}</div><div class="c-lbl">Total Gallons</div></div>
+      <div class="chip"><div class="c-val">${fmt$(totalCost)}</div><div class="c-lbl">Total Spend</div></div>
+      <div class="chip"><div class="c-val">${fmt$(avgCpg)}</div><div class="c-lbl">Avg Cost / Gallon</div></div>
+    </div>
+    <div class="card">
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Date</th><th>Vehicle</th><th>Gallons</th><th>Cost/Gal</th><th>Total Cost</th><th>Odometer</th><th>Full Tank</th><th></th></tr></thead>
+          <tbody>
+            ${sorted.map(e => `<tr>
+              <td class="text-muted">${e.date}</td><td>${vName(e.vehicleId)}</td>
+              <td>${e.gallons.toFixed(3)}</td><td>${fmt$(e.cpg)}</td><td>${fmt$(e.total)}</td>
+              <td>${fmtN(e.odometer)} mi</td><td>${e.full?"✅ Yes":"Partial"}</td>
+              <td><button class="btn btn-danger btn-sm" onclick="deleteFuel(${e.id})">Delete</button></td>
+            </tr>`).join("")}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+
+  document.getElementById("add-fuel-btn").addEventListener("click", () => {
+    const today = new Date().toISOString().slice(0,10);
+    openModal(`
+      <h2>Add Fuel Fill-up</h2>
+      <form>
+        <div class="form-group"><label>Vehicle</label><select name="vehicleId">${vehicleOptions()}</select></div>
+        <div class="form-row">
+          <div class="form-group"><label>Date</label><input type="date" name="date" value="${today}" required /></div>
+          <div class="form-group"><label>Odometer (mi)</label><input type="number" name="odometer" placeholder="e.g. 34500" required /></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Gallons</label><input type="number" id="f-gal" name="gallons" step="0.001" placeholder="e.g. 18.4" required /></div>
+          <div class="form-group"><label>Cost per Gallon ($)</label><input type="number" id="f-cpg" name="cpg" step="0.001" placeholder="e.g. 3.79" required /></div>
+        </div>
+        <div class="form-group"><label>Total Cost ($)</label><input type="number" id="f-total" name="total" step="0.01" placeholder="Auto-calculated" /></div>
+        <div class="form-group" style="display:flex;align-items:center;gap:0.5rem">
+          <input type="checkbox" name="full" id="f-full" checked style="width:auto" />
+          <label for="f-full" style="margin:0;font-weight:400">Full tank</label>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ghost modal-cancel">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save</button>
+        </div>
+      </form>
+    `, fd => {
+      const gal = Number(fd.get("gallons")), cpg = Number(fd.get("cpg"));
+      const total = Number(fd.get("total")) || +(gal*cpg).toFixed(2);
+      fuelEntries.push({ id: nextId(fuelEntries), vehicleId: Number(fd.get("vehicleId")),
+        date: fd.get("date"), gallons: gal, cpg, total,
+        odometer: Number(fd.get("odometer")), full: !!fd.get("full") });
+      renderFuel();
+    });
+
+    const calcTotal = () => {
+      const g = parseFloat(document.getElementById("f-gal")?.value);
+      const c = parseFloat(document.getElementById("f-cpg")?.value);
+      if (!isNaN(g) && !isNaN(c)) document.getElementById("f-total").value = (g*c).toFixed(2);
+    };
+    setTimeout(() => {
+      document.getElementById("f-gal")?.addEventListener("input", calcTotal);
+      document.getElementById("f-cpg")?.addEventListener("input", calcTotal);
+    }, 0);
+  });
+}
+
+function deleteFuel(id) {
+  if (!confirm("Delete this entry?")) return;
+  const idx = fuelEntries.findIndex(e => e.id === id);
+  if (idx !== -1) fuelEntries.splice(idx, 1);
+  renderFuel();
+}
+
+// ═══════════════════════════════════════════
+//  TAB: INSPECTIONS
+// ═══════════════════════════════════════════
+
+function renderInspections() {
+  const sorted = [...inspections].sort((a,b) => b.date.localeCompare(a.date));
+  document.getElementById("tab-inspections").innerHTML = `
+    <div class="page-header">
+      <div><h1>Inspections</h1><p>${inspections.length} inspection reports</p></div>
+      <button class="btn btn-primary" id="add-insp-btn">+ New Inspection</button>
+    </div>
+    <div class="card">
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Date</th><th>Vehicle</th><th>Driver</th><th>Result</th><th>Failed Items</th><th>Notes</th><th></th></tr></thead>
+          <tbody>
+            ${sorted.map(e => {
+              const failed = Object.entries(e.results).filter(([,v]) => v==="fail").map(([k]) => k);
+              return `<tr>
+                <td class="text-muted">${e.date}</td><td>${vName(e.vehicleId)}</td><td>${e.driver}</td>
+                <td>${badge(e.pass?"pass":"fail")}</td>
+                <td style="font-size:0.8rem;color:var(--danger)">${failed.length ? failed.join(", ") : '<span class="text-muted">—</span>'}</td>
+                <td class="text-muted" style="font-size:0.82rem">${e.notes||"—"}</td>
+                <td><button class="btn btn-danger btn-sm" onclick="deleteInsp(${e.id})">Delete</button></td>
+              </tr>`;
+            }).join("")}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+
+  document.getElementById("add-insp-btn").addEventListener("click", () => {
+    const today = new Date().toISOString().slice(0,10);
+    openModal(`
+      <h2>New Inspection</h2>
+      <form>
+        <div class="form-group"><label>Vehicle</label><select name="vehicleId">${vehicleOptions()}</select></div>
+        <div class="form-row">
+          <div class="form-group"><label>Date</label><input type="date" name="date" value="${today}" required /></div>
+          <div class="form-group"><label>Driver Name</label><input type="text" name="driver" placeholder="Full name" required /></div>
+        </div>
+        <div class="form-group">
+          <label style="margin-bottom:0.75rem">Checklist</label>
+          ${CHECKLIST.map((item,i) => `
+            <div class="checklist-item">
+              <span class="item-name">${item}</span>
+              <div class="radio-group">
+                <label><input type="radio" name="chk_${i}" value="pass" checked /> Pass</label>
+                <label><input type="radio" name="chk_${i}" value="fail" /> Fail</label>
+              </div>
+            </div>`).join("")}
+        </div>
+        <div class="form-group"><label>Notes</label><textarea name="notes" placeholder="Any observations…"></textarea></div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ghost modal-cancel">Cancel</button>
+          <button type="submit" class="btn btn-primary">Submit Inspection</button>
+        </div>
+      </form>
+    `, fd => {
+      const results = {};
+      CHECKLIST.forEach((item,i) => { results[item] = fd.get(`chk_${i}`); });
+      const pass = Object.values(results).every(v => v==="pass");
+      inspections.push({ id: nextId(inspections), vehicleId: Number(fd.get("vehicleId")),
+        date: fd.get("date"), driver: fd.get("driver"), results, pass, notes: fd.get("notes")||"" });
+      renderInspections();
+    });
+  });
+}
+
+function deleteInsp(id) {
+  if (!confirm("Delete this inspection?")) return;
+  const idx = inspections.findIndex(e => e.id === id);
+  if (idx !== -1) inspections.splice(idx, 1);
+  renderInspections();
+}
+
+
+// ═══════════════════════════════════════════
+//  TAB: DRIVERS
+// ═══════════════════════════════════════════
+
+function renderDrivers() {
+  const totalCostLM  = driverCosts.filter(c => c.date>=LM_START && c.date<=LM_END).reduce((s,c) => s+c.amount, 0);
+  const activeCount  = drivers.filter(d => d.status==="active").length;
+  const sortedCosts  = [...driverCosts].sort((a,b) => b.date.localeCompare(a.date));
+  const today        = new Date().toISOString().slice(0,10);
+  const WARN_DAYS    = 90; // warn if expiry within 90 days
+
+  function expiryClass(expiry) {
+    const days = (new Date(expiry) - new Date(today)) / 86400000;
+    return days < WARN_DAYS ? "expiry-warn" : "";
+  }
+
+  document.getElementById("tab-drivers").innerHTML = `
+    <div class="page-header">
+      <div><h1>Drivers</h1><p>${drivers.length} drivers — ${activeCount} active</p></div>
+      <div style="display:flex;gap:0.5rem">
+        <button class="btn btn-ghost" id="add-cost-btn">+ Log Cost</button>
+        <button class="btn btn-primary" id="add-driver-btn">+ Add Driver</button>
+      </div>
+    </div>
+
+    <div class="driver-grid">
+      ${drivers.map(d => {
+        const veh = vehicles.find(v => v.id === d.vehicleId);
+        const marchCosts = driverCosts.filter(c => c.driverId===d.id && c.date>=LM_START && c.date<=LM_END).reduce((s,c)=>s+c.amount,0);
+        const eCls = expiryClass(d.licenseExpiry);
+        return `<div class="driver-card">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:0.5rem">
+            <div class="d-name">${d.name}</div>
+            ${badge(d.status)}
+          </div>
+          <div class="d-info">
+            <div>📋 ${d.license}</div>
+            <div class="${eCls}">📅 Expires: ${d.licenseExpiry}${eCls ? " ⚠️" : ""}</div>
+            <div>📞 ${d.phone}</div>
+            <div>🚗 ${veh ? `${veh.year} ${veh.make} ${veh.model}` : "No primary vehicle"}</div>
+            <div style="margin-top:0.5rem;font-weight:600;color:var(--text)">March cost: ${fmt$(marchCosts)}</div>
+          </div>
+          <button class="btn btn-danger btn-sm" style="margin-top:0.75rem;width:100%" onclick="deleteDriver(${d.id})">Remove</button>
+        </div>`;
+      }).join("")}
+    </div>
+
+    <div class="card section-gap">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+        <div>
+          <div class="card-title" style="margin-bottom:0">Driver Costs
+            <span class="card-subtitle">March 2026 total: ${fmt$(totalCostLM)}</span>
+          </div>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Date</th><th>Driver</th><th>Vehicle</th><th>Type</th><th>Amount</th><th>Notes</th><th></th></tr></thead>
+          <tbody>
+            ${sortedCosts.length === 0 ? `<tr><td colspan="7" class="empty">No cost entries yet.</td></tr>` :
+              sortedCosts.map(c => `<tr>
+                <td class="text-muted">${c.date}</td>
+                <td>${dName(c.driverId)}</td>
+                <td>${c.vehicleId ? vName(c.vehicleId) : '<span class="text-muted">—</span>'}</td>
+                <td>${badge(c.type)}</td>
+                <td><strong>${fmt$(c.amount)}</strong></td>
+                <td class="text-muted">${c.notes||"—"}</td>
+                <td><button class="btn btn-danger btn-sm" onclick="deleteDriverCost(${c.id})">Delete</button></td>
+              </tr>`).join("")}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+
+  document.getElementById("add-driver-btn").addEventListener("click", () => {
+    openModal(`
+      <h2>Add Driver</h2>
+      <form>
+        <div class="form-row">
+          <div class="form-group"><label>Full Name</label><input type="text" name="name" required /></div>
+          <div class="form-group"><label>Phone</label><input type="text" name="phone" placeholder="555-0100" /></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>License Number</label><input type="text" name="license" placeholder="CA-DL123456" required /></div>
+          <div class="form-group"><label>License Expiry</label><input type="date" name="licenseExpiry" required /></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Primary Vehicle (optional)</label><select name="vehicleId"><option value="">— None —</option>${vehicleOptions()}</select></div>
+          <div class="form-group"><label>Status</label><select name="status"><option value="active">Active</option><option value="inactive">Inactive</option></select></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ghost modal-cancel">Cancel</button>
+          <button type="submit" class="btn btn-primary">Add Driver</button>
+        </div>
+      </form>
+    `, fd => {
+      const vId = fd.get("vehicleId") ? Number(fd.get("vehicleId")) : null;
+      drivers.push({ id: nextId(drivers), name: fd.get("name"), license: fd.get("license"),
+        licenseExpiry: fd.get("licenseExpiry"), phone: fd.get("phone")||"—",
+        vehicleId: vId, status: fd.get("status") });
+      renderDrivers();
+    });
+  });
+
+  document.getElementById("add-cost-btn").addEventListener("click", () => {
+    const today2 = new Date().toISOString().slice(0,10);
+    openModal(`
+      <h2>Log Driver Cost</h2>
+      <form>
+        <div class="form-row">
+          <div class="form-group"><label>Driver</label>
+            <select name="driverId">${drivers.map(d=>`<option value="${d.id}">${d.name}</option>`).join("")}</select>
+          </div>
+          <div class="form-group"><label>Vehicle (optional)</label><select name="vehicleId"><option value="">— None —</option>${vehicleOptions()}</select></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Date</label><input type="date" name="date" value="${today2}" required /></div>
+          <div class="form-group"><label>Type</label><select name="type">${DRIVER_COST_TYPES.map(t=>`<option>${t}</option>`).join("")}</select></div>
+        </div>
+        <div class="form-group"><label>Amount ($)</label><input type="number" name="amount" step="0.01" required /></div>
+        <div class="form-group"><label>Notes</label><input type="text" name="notes" placeholder="e.g. March salary" /></div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ghost modal-cancel">Cancel</button>
+          <button type="submit" class="btn btn-primary">Log Cost</button>
+        </div>
+      </form>
+    `, fd => {
+      const vId = fd.get("vehicleId") ? Number(fd.get("vehicleId")) : null;
+      driverCosts.push({ id: nextId(driverCosts),
+        driverId: Number(fd.get("driverId")), vehicleId: vId,
+        date: fd.get("date"), type: fd.get("type"),
+        amount: Number(fd.get("amount")), notes: fd.get("notes")||"" });
+      renderDrivers();
+    });
+  });
+}
+
+function deleteDriver(id) {
+  if (!confirm("Remove this driver?")) return;
+  const idx = drivers.findIndex(d => d.id === id);
+  if (idx !== -1) drivers.splice(idx, 1);
+  renderDrivers();
+}
+
+function deleteDriverCost(id) {
+  if (!confirm("Delete this cost entry?")) return;
+  const idx = driverCosts.findIndex(c => c.id === id);
+  if (idx !== -1) driverCosts.splice(idx, 1);
+  renderDrivers();
+}
+
+// ═══════════════════════════════════════════
+//  NAVIGATION
+// ═══════════════════════════════════════════
+
+const RENDERERS = {
+  dashboard:   renderDashboard,
+  vehicles:    renderVehicles,
+  jobs:        renderJobs,
+  maintenance: renderMaintenance,
+  fuel:        renderFuel,
+  inspections: renderInspections,
+  drivers:     renderDrivers,
+};
+
+function showTab(name) {
+  document.querySelectorAll("#sidebar li").forEach(li =>
+    li.classList.toggle("active", li.dataset.tab === name));
+  document.querySelectorAll("#content section").forEach(s =>
+    s.style.display = s.id === `tab-${name}` ? "block" : "none");
+  RENDERERS[name]();
+}
+
+document.querySelectorAll("#sidebar li").forEach(li =>
+  li.addEventListener("click", () => showTab(li.dataset.tab)));
+
+// Boot
+showTab("dashboard");
+</script>
+</body>
+</html>
