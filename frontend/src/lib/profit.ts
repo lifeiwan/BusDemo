@@ -48,12 +48,20 @@ function inRange(date: string, range: DateRange): boolean {
   return date >= range.startDate && date <= range.endDate;
 }
 
+/** Number of calendar months fully or partially covered by a range. */
+function monthsInRange(range: DateRange): number {
+  const s = new Date(range.startDate.slice(0, 7) + '-01');
+  const e = new Date(range.endDate.slice(0, 7) + '-01');
+  return (e.getFullYear() - s.getFullYear()) * 12 + (e.getMonth() - s.getMonth()) + 1;
+}
+
 // ── Cost helpers ──────────────────────────────────────────
 
-function insuranceCostForVehicle(vehicleId: number, data: DataSnapshot): number {
+function insuranceCostForVehicle(vehicleId: number, range: DateRange, data: DataSnapshot): number {
+  const months = monthsInRange(range);
   return data.insurancePolicies
     .filter(p => p.vehicleId === vehicleId)
-    .reduce((sum, p) => sum + (p.type === 'monthly' ? p.cost : p.cost / 12), 0);
+    .reduce((sum, p) => sum + (p.type === 'monthly' ? p.cost : p.cost / 12) * months, 0);
 }
 
 function maintenanceCostForVehicle(vehicleId: number, range: DateRange, data: DataSnapshot): number {
@@ -69,10 +77,11 @@ function fuelCostForVehicle(vehicleId: number, range: DateRange, data: DataSnaps
 }
 
 function parkingCostForVehicle(vehicleId: number, range: DateRange, data: DataSnapshot): number {
+  const months = monthsInRange(range);
   return data.parkingEntries
     .filter(p => p.vehicleId === vehicleId)
     .reduce((sum, p) => {
-      if (p.type === 'monthly' && p.startDate) return sum + p.cost;
+      if (p.type === 'monthly' && p.startDate) return sum + p.cost * months;
       if (p.type === 'one_time' && p.date && inRange(p.date, range)) return sum + p.cost;
       return sum;
     }, 0);
@@ -88,26 +97,46 @@ function totalVehicleCosts(vehicleId: number, range: DateRange, data: DataSnapsh
   return (
     maintenanceCostForVehicle(vehicleId, range, data) +
     fuelCostForVehicle(vehicleId, range, data) +
-    insuranceCostForVehicle(vehicleId, data) +
+    insuranceCostForVehicle(vehicleId, range, data) +
     parkingCostForVehicle(vehicleId, range, data)
   );
+}
+
+/**
+ * Revenue, costs, and net profit for a set of jobs.
+ * - Revenue includes base job revenue + income line items.
+ * - Costs include expense line items + vehicle costs (once per unique vehicle)
+ *   + driver costs (once per unique driver), avoiding double-counting.
+ */
+function groupProfit(jobs: Job[], range: DateRange, data: DataSnapshot) {
+  const revenue = jobs.reduce((s, j) => {
+    const lineIncome = data.jobLineItems
+      .filter(li => li.jobId === j.id && li.direction === 'income')
+      .reduce((a, li) => a + li.amount, 0);
+    return s + j.revenue + lineIncome;
+  }, 0);
+
+  const lineCosts = jobs.reduce((s, j) =>
+    s + data.jobLineItems
+      .filter(li => li.jobId === j.id && li.direction === 'cost')
+      .reduce((a, li) => a + li.amount, 0), 0);
+
+  const uniqueVehicleIds = [...new Set(jobs.map(j => j.vehicleId))];
+  const vehicleCosts = uniqueVehicleIds.reduce((s, vId) => s + totalVehicleCosts(vId, range, data), 0);
+
+  const uniqueDriverIds = [...new Set(
+    jobs.map(j => j.driverId).filter((id): id is number => id != null)
+  )];
+  const driverCosts = uniqueDriverIds.reduce((s, dId) => s + driverCostForDriver(dId, range, data), 0);
+
+  const costs = lineCosts + vehicleCosts + driverCosts;
+  return { revenue, costs, netProfit: revenue - costs };
 }
 
 export function jobNetProfit(jobId: number, range: DateRange, data: DataSnapshot): number {
   const job = data.jobs.find(j => j.id === jobId);
   if (!job) return 0;
-
-  const lineIncome = data.jobLineItems
-    .filter(li => li.jobId === jobId && li.direction === 'income')
-    .reduce((s, li) => s + li.amount, 0);
-  const lineCost = data.jobLineItems
-    .filter(li => li.jobId === jobId && li.direction === 'cost')
-    .reduce((s, li) => s + li.amount, 0);
-
-  const vehicleCost = totalVehicleCosts(job.vehicleId, range, data);
-  const driverCost = job.driverId ? driverCostForDriver(job.driverId, range, data) : 0;
-
-  return (job.revenue + lineIncome) - (lineCost + vehicleCost + driverCost);
+  return groupProfit([job], range, data).netProfit;
 }
 
 // ── Job filtering ─────────────────────────────────────────
@@ -126,9 +155,7 @@ export function profitByJobGroup(range: DateRange, data: DataSnapshot): ProfitRo
   return data.jobGroups
     .map(jg => {
       const jgJobs = activeJobs(range, data).filter(j => j.jobGroupId === jg.id);
-      const revenue = jgJobs.reduce((s, j) => s + j.revenue, 0);
-      const costs = jgJobs.reduce((s, j) => s + (j.revenue - jobNetProfit(j.id, range, data)), 0);
-      const netProfit = revenue - costs;
+      const { revenue, costs, netProfit } = groupProfit(jgJobs, range, data);
       return { id: jg.id, label: jg.name, revenue, costs, netProfit, margin: revenue > 0 ? (netProfit / revenue) * 100 : 0 };
     })
     .sort((a, b) => b.netProfit - a.netProfit);
@@ -138,8 +165,17 @@ export function profitByVehicle(range: DateRange, data: DataSnapshot): ProfitRow
   return data.vehicles
     .map(v => {
       const vJobs = activeJobs(range, data).filter(j => j.vehicleId === v.id);
-      const revenue = vJobs.reduce((s, j) => s + j.revenue, 0);
-      const costs = totalVehicleCosts(v.id, range, data);
+      const revenue = vJobs.reduce((s, j) => {
+        const lineIncome = data.jobLineItems
+          .filter(li => li.jobId === j.id && li.direction === 'income')
+          .reduce((a, li) => a + li.amount, 0);
+        return s + j.revenue + lineIncome;
+      }, 0);
+      const lineCosts = vJobs.reduce((s, j) =>
+        s + data.jobLineItems
+          .filter(li => li.jobId === j.id && li.direction === 'cost')
+          .reduce((a, li) => a + li.amount, 0), 0);
+      const costs = totalVehicleCosts(v.id, range, data) + lineCosts;
       const netProfit = revenue - costs;
       return { id: v.id, label: `${v.year} ${v.make} ${v.model}`, revenue, costs, netProfit, margin: revenue > 0 ? (netProfit / revenue) * 100 : 0 };
     })
@@ -151,9 +187,7 @@ export function profitByCustomer(range: DateRange, data: DataSnapshot): ProfitRo
   return data.customers
     .map(c => {
       const cJobs = activeJobs(range, data).filter(j => j.customerId === c.id);
-      const revenue = cJobs.reduce((s, j) => s + j.revenue, 0);
-      const costs = cJobs.reduce((s, j) => s + (j.revenue - jobNetProfit(j.id, range, data)), 0);
-      const netProfit = revenue - costs;
+      const { revenue, costs, netProfit } = groupProfit(cJobs, range, data);
       return { id: c.id, label: c.name, revenue, costs, netProfit, margin: revenue > 0 ? (netProfit / revenue) * 100 : 0 };
     })
     .filter(r => r.revenue > 0 || r.costs > 0)
@@ -164,7 +198,12 @@ export function profitByDriver(range: DateRange, data: DataSnapshot): ProfitRow[
   return data.drivers
     .map(d => {
       const dJobs = activeJobs(range, data).filter(j => j.driverId === d.id);
-      const revenue = dJobs.reduce((s, j) => s + j.revenue, 0);
+      const revenue = dJobs.reduce((s, j) => {
+        const lineIncome = data.jobLineItems
+          .filter(li => li.jobId === j.id && li.direction === 'income')
+          .reduce((a, li) => a + li.amount, 0);
+        return s + j.revenue + lineIncome;
+      }, 0);
       const costs = driverCostForDriver(d.id, range, data);
       const netProfit = revenue - costs;
       return { id: d.id, label: d.name, revenue, costs, netProfit, margin: revenue > 0 ? (netProfit / revenue) * 100 : 0 };
@@ -187,9 +226,7 @@ export function profitByMonthRange(range: DateRange, data: DataSnapshot): Profit
     };
     const label = cursor.toLocaleString('default', { month: 'short', year: 'numeric' });
     const periodJobs = activeJobs(monthRange, data);
-    const revenue = periodJobs.reduce((s, j) => s + j.revenue, 0);
-    const costs = periodJobs.reduce((s, j) => s + (j.revenue - jobNetProfit(j.id, monthRange, data)), 0);
-    const netProfit = revenue - costs;
+    const { revenue, costs, netProfit } = groupProfit(periodJobs, monthRange, data);
     result.push({ id: label, label, revenue, costs, netProfit, margin: revenue > 0 ? (netProfit / revenue) * 100 : 0 });
     cursor = new Date(y, m - 1, 1);
   }
@@ -208,9 +245,7 @@ export function profitByPeriod(months: number, data: DataSnapshot): ProfitRow[] 
     };
     const label = d.toLocaleString('default', { month: 'short', year: 'numeric' });
     const periodJobs = activeJobs(range, data);
-    const revenue = periodJobs.reduce((s, j) => s + j.revenue, 0);
-    const costs = periodJobs.reduce((s, j) => s + (j.revenue - jobNetProfit(j.id, range, data)), 0);
-    const netProfit = revenue - costs;
+    const { revenue, costs, netProfit } = groupProfit(periodJobs, range, data);
     result.push({ id: label, label, revenue, costs, netProfit, margin: revenue > 0 ? (netProfit / revenue) * 100 : 0 });
   }
   return result;
