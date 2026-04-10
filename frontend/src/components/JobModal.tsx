@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useData } from '../context/DataContext';
 import Modal from './Modal';
 import type { Job, JobLineItem } from '../types';
@@ -30,6 +31,7 @@ interface Props {
 }
 
 export default function JobModal({ editing, onClose }: Props) {
+  const { t } = useTranslation();
   const data = useData();
   const { jobs, vehicles, drivers, customers, jobGroups, jobLineItems,
     addJob, updateJob,
@@ -122,80 +124,80 @@ export default function JobModal({ editing, onClose }: Props) {
   const fmt$ = (n: number) => '$' + Math.abs(n).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 
   return (
-    <Modal title={editing ? 'Edit Job' : 'Add Job'} onClose={onClose} wide>
+    <Modal title={editing ? t('jobs.editTitle') : t('jobs.addTitle')} onClose={onClose} wide>
       <div className="space-y-5">
 
         {/* ── Job Details ── */}
         <div className="grid grid-cols-2 gap-4">
           <div className="col-span-2">
-            <label className="block text-sm font-medium text-slate-700 mb-1">Job Name *</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">{t('jobs.jobName')} *</label>
             <input value={form.name} onChange={set('name')}
-              className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="e.g. Airport Shuttle Route A" />
+              className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder={t('jobs.jobNamePlaceholder')} />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Job Group *</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">{t('jobs.jobGroup')} *</label>
             <select value={form.jobGroupId} onChange={set('jobGroupId')}
               className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-              <option value={0}>— select —</option>
+              <option value={0}>{t('jobs.select')}</option>
               {jobGroups.map(jg => <option key={jg.id} value={jg.id}>{jg.name}</option>)}
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Customer *</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">{t('jobs.customer')} *</label>
             <select value={form.customerId} onChange={set('customerId')}
               className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-              <option value={0}>— select —</option>
+              <option value={0}>{t('jobs.select')}</option>
               {customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Vehicle *</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">{t('jobs.vehicle')} *</label>
             <select value={form.vehicleId} onChange={set('vehicleId')}
               className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-              <option value={0}>— select —</option>
+              <option value={0}>{t('jobs.select')}</option>
               {vehicles.map(v => <option key={v.id} value={v.id}>{v.year} {v.make} {v.model}</option>)}
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Driver</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">{t('jobs.driver')}</label>
             <select value={form.driverId ?? ''} onChange={set('driverId')}
               className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-              <option value="">— unassigned —</option>
+              <option value="">{t('jobs.unassigned')}</option>
               {drivers.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Revenue ($)</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">{t('jobs.revenue')}</label>
             <input type="number" value={form.revenue} onChange={set('revenue')} min={0}
               className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Recurrence</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">{t('jobs.recurrence')}</label>
             <select value={form.recurrence} onChange={set('recurrence')}
               className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-              <option value="daily">Daily</option>
-              <option value="weekly">Weekly</option>
-              <option value="monthly">Monthly</option>
-              <option value="one_time">One-Time</option>
+              <option value="daily">{t('jobs.recurrenceDaily')}</option>
+              <option value="weekly">{t('jobs.recurrenceWeekly')}</option>
+              <option value="monthly">{t('jobs.recurrenceMonthly')}</option>
+              <option value="one_time">{t('jobs.recurrenceOneTime')}</option>
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Start Date</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">{t('jobs.startDate')}</label>
             <input type="date" value={form.startDate} onChange={set('startDate')}
               className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">End Date</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">{t('jobs.endDate')}</label>
             <input type="date" value={form.endDate ?? ''} onChange={e => setForm(f => ({ ...f, endDate: e.target.value || null }))}
               className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Status</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">{t('common.status')}</label>
             <select value={form.status} onChange={set('status')}
               className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-              <option value="active">Active</option>
-              <option value="scheduled">Scheduled</option>
-              <option value="completed">Completed</option>
+              <option value="active">{t('status.active')}</option>
+              <option value="scheduled">{t('status.scheduled')}</option>
+              <option value="completed">{t('status.completed')}</option>
             </select>
           </div>
         </div>
@@ -203,10 +205,10 @@ export default function JobModal({ editing, onClose }: Props) {
         {/* ── One-Time Fees ── */}
         <div>
           <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-semibold text-slate-700">One-Time Fees &amp; Reimbursements</h3>
+            <h3 className="text-sm font-semibold text-slate-700">{t('jobs.feesSection')}</h3>
             {draftItems.length > 0 && (
               <span className={`text-xs font-semibold ${lineItemsTotal >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                Net: {lineItemsTotal >= 0 ? '+' : ''}{fmt$(lineItemsTotal)}
+                {t('jobs.feesNet')} {lineItemsTotal >= 0 ? '+' : ''}{fmt$(lineItemsTotal)}
               </span>
             )}
           </div>
@@ -216,11 +218,11 @@ export default function JobModal({ editing, onClose }: Props) {
               <table className="w-full">
                 <thead>
                   <tr className="bg-slate-50 border-b border-slate-200">
-                    <th className="text-left px-3 py-2 text-xs font-semibold text-slate-500 uppercase">Date</th>
-                    <th className="text-left px-3 py-2 text-xs font-semibold text-slate-500 uppercase">Category</th>
-                    <th className="text-left px-3 py-2 text-xs font-semibold text-slate-500 uppercase">Type</th>
-                    <th className="text-right px-3 py-2 text-xs font-semibold text-slate-500 uppercase">Amount</th>
-                    <th className="text-left px-3 py-2 text-xs font-semibold text-slate-500 uppercase">Notes</th>
+                    <th className="text-left px-3 py-2 text-xs font-semibold text-slate-500 uppercase">{t('jobs.feeDate')}</th>
+                    <th className="text-left px-3 py-2 text-xs font-semibold text-slate-500 uppercase">{t('jobs.feeCategory')}</th>
+                    <th className="text-left px-3 py-2 text-xs font-semibold text-slate-500 uppercase">{t('jobs.feeType')}</th>
+                    <th className="text-right px-3 py-2 text-xs font-semibold text-slate-500 uppercase">{t('jobs.feeAmount')}</th>
+                    <th className="text-left px-3 py-2 text-xs font-semibold text-slate-500 uppercase">{t('jobs.feeNotes')}</th>
                     <th></th>
                   </tr>
                 </thead>
@@ -231,7 +233,7 @@ export default function JobModal({ editing, onClose }: Props) {
                       <td className="px-3 py-2 font-medium">{item.category}</td>
                       <td className="px-3 py-2">
                         <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${item.direction === 'cost' ? 'bg-red-50 text-red-600' : 'bg-green-50 text-green-600'}`}>
-                          {item.direction === 'cost' ? 'Cost' : 'Income'}
+                          {item.direction === 'cost' ? t('jobs.feeCost') : t('jobs.feeIncome')}
                         </span>
                       </td>
                       <td className={`px-3 py-2 text-right font-semibold ${item.direction === 'cost' ? 'text-red-600' : 'text-green-600'}`}>
@@ -249,7 +251,7 @@ export default function JobModal({ editing, onClose }: Props) {
           )}
 
           <div className="bg-slate-50 rounded-lg border border-slate-200 p-3">
-            <p className="text-xs text-slate-500 mb-2 font-medium">Add fee / reimbursement</p>
+            <p className="text-xs text-slate-500 mb-2 font-medium">{t('jobs.addFee')}</p>
             <div className="flex gap-1 mb-2">
               {PRESET_CATEGORIES.map(cat => (
                 <button key={cat} type="button"
@@ -261,42 +263,42 @@ export default function JobModal({ editing, onClose }: Props) {
             </div>
             <div className="grid grid-cols-5 gap-2">
               <div>
-                <label className="block text-xs text-slate-500 mb-1">Date</label>
+                <label className="block text-xs text-slate-500 mb-1">{t('jobs.feeDate')}</label>
                 <input type="date" value={newItem.date}
                   onChange={e => setNewItem(x => ({ ...x, date: e.target.value }))}
                   className="w-full border border-slate-300 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500" />
               </div>
               <div>
-                <label className="block text-xs text-slate-500 mb-1">Category</label>
+                <label className="block text-xs text-slate-500 mb-1">{t('jobs.feeCategory')}</label>
                 <input value={newItem.category}
                   onChange={e => setNewItem(x => ({ ...x, category: e.target.value }))}
-                  className="w-full border border-slate-300 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Toll" />
+                  className="w-full border border-slate-300 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder={t('jobs.feeCategoryPlaceholder')} />
               </div>
               <div>
-                <label className="block text-xs text-slate-500 mb-1">Type</label>
+                <label className="block text-xs text-slate-500 mb-1">{t('jobs.feeType')}</label>
                 <select value={newItem.direction}
                   onChange={e => setNewItem(x => ({ ...x, direction: e.target.value as 'cost' | 'income' }))}
                   className="w-full border border-slate-300 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500">
-                  <option value="cost">Cost</option>
-                  <option value="income">Income</option>
+                  <option value="cost">{t('jobs.feeCost')}</option>
+                  <option value="income">{t('jobs.feeIncome')}</option>
                 </select>
               </div>
               <div>
-                <label className="block text-xs text-slate-500 mb-1">Amount ($)</label>
+                <label className="block text-xs text-slate-500 mb-1">{t('jobs.feeAmount')}</label>
                 <input type="number" value={newItem.amount} min={0} step="0.01"
                   onChange={e => setNewItem(x => ({ ...x, amount: parseFloat(e.target.value) || 0 }))}
                   className="w-full border border-slate-300 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500" />
               </div>
               <div>
-                <label className="block text-xs text-slate-500 mb-1">Notes</label>
+                <label className="block text-xs text-slate-500 mb-1">{t('jobs.feeNotes')}</label>
                 <input value={newItem.notes}
                   onChange={e => setNewItem(x => ({ ...x, notes: e.target.value }))}
-                  className="w-full border border-slate-300 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="optional" />
+                  className="w-full border border-slate-300 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder={t('common.optional')} />
               </div>
             </div>
             <button onClick={addDraftItem}
               className="mt-2 px-3 py-1.5 bg-blue-500 text-white text-xs font-medium rounded hover:bg-blue-600 transition-colors">
-              + Add
+              + {t('common.add')}
             </button>
           </div>
         </div>
@@ -308,7 +310,7 @@ export default function JobModal({ editing, onClose }: Props) {
               onChange={e => setFuelDraft(f => ({ ...f, enabled: e.target.checked }))}
               className="w-4 h-4 rounded border-slate-300 text-blue-500" />
             <label htmlFor="fuel-toggle" className="text-sm font-semibold text-slate-700 cursor-pointer">
-              Log fuel fill-up for this job
+              {t('jobs.fuelSection')}
             </label>
             {form.vehicleId > 0 && (
               <span className="text-xs text-slate-400">
@@ -321,32 +323,32 @@ export default function JobModal({ editing, onClose }: Props) {
             <div className="bg-slate-50 rounded-lg border border-slate-200 p-3">
               <div className="grid grid-cols-4 gap-3">
                 <div>
-                  <label className="block text-xs text-slate-500 mb-1">Gallons</label>
+                  <label className="block text-xs text-slate-500 mb-1">{t('jobs.fuelGallons')}</label>
                   <input type="number" value={fuelDraft.gallons} min={0} step="0.001"
                     onChange={e => setFuelDraft(f => ({ ...f, gallons: e.target.value }))}
                     className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="0.000" />
                 </div>
                 <div>
-                  <label className="block text-xs text-slate-500 mb-1">Cost per Gallon ($)</label>
+                  <label className="block text-xs text-slate-500 mb-1">{t('jobs.fuelCpg')}</label>
                   <input type="number" value={fuelDraft.cpg} min={0} step="0.001"
                     onChange={e => setFuelDraft(f => ({ ...f, cpg: e.target.value }))}
                     className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="0.000" />
                 </div>
                 <div>
-                  <label className="block text-xs text-slate-500 mb-1">Odometer</label>
+                  <label className="block text-xs text-slate-500 mb-1">{t('jobs.fuelOdometer')}</label>
                   <input type="number" value={fuelDraft.odometer} min={0}
                     onChange={e => setFuelDraft(f => ({ ...f, odometer: e.target.value }))}
                     className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="0" />
                 </div>
                 <div>
-                  <label className="block text-xs text-slate-500 mb-1">Total (calculated)</label>
+                  <label className="block text-xs text-slate-500 mb-1">{t('jobs.fuelTotal')}</label>
                   <div className="px-2 py-1.5 text-sm font-semibold text-slate-700 bg-white border border-slate-200 rounded">
                     {fuelTotal !== '—' ? `$${fuelTotal}` : '—'}
                   </div>
                 </div>
               </div>
               <p className="text-xs text-slate-400 mt-2">
-                Entry dated {form.startDate} will appear in the vehicle's Fuel tab.
+                {t('jobs.fuelNote', { date: form.startDate })}
               </p>
             </div>
           )}
@@ -355,10 +357,10 @@ export default function JobModal({ editing, onClose }: Props) {
         {/* ── Actions ── */}
         <div className="flex gap-2 pt-1 border-t border-slate-100">
           <button onClick={save} className="flex-1 bg-blue-500 text-white py-2 rounded-lg text-sm font-medium hover:bg-blue-600 transition-colors">
-            {editing ? 'Save Changes' : 'Add Job'}
+            {editing ? t('common.save') : t('jobs.add')}
           </button>
           <button onClick={onClose} className="flex-1 border border-slate-300 text-slate-600 py-2 rounded-lg text-sm font-medium hover:bg-slate-50 transition-colors">
-            Cancel
+            {t('common.cancel')}
           </button>
         </div>
       </div>

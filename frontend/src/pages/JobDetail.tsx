@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useParams, Navigate, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useData } from '../context/DataContext';
 import Badge from '../components/Badge';
 import JobModal from '../components/JobModal';
@@ -12,6 +13,7 @@ export default function JobDetail() {
   const { id } = useParams();
   const { jobs, jobGroups, vehicles, drivers, customers, jobLineItems } = useData();
 
+  const { t } = useTranslation();
   const job = jobs.find(j => j.id === Number(id));
   const [editing, setEditing] = useState(false);
   if (!job) return <Navigate to="/profit/jobs" replace />;
@@ -36,7 +38,7 @@ export default function JobDetail() {
       {/* Header */}
       <div className="mb-6">
         <div className="flex items-center gap-2 text-sm text-slate-500 mb-2">
-          <Link to="/profit/job-groups" className="hover:text-blue-600">Job Groups</Link>
+          <Link to="/profit/job-groups" className="hover:text-blue-600">{t('jobDetail.breadcrumbGroups')}</Link>
           <span>/</span>
           {jobGroup && (
             <>
@@ -67,19 +69,19 @@ export default function JobDetail() {
       {/* KPI cards */}
       <div className="grid grid-cols-4 gap-4 mb-6">
         <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
-          <p className="text-xs text-slate-500 uppercase tracking-wide mb-1">Revenue</p>
+          <p className="text-xs text-slate-500 uppercase tracking-wide mb-1">{t('jobDetail.revenue')}</p>
           <p className="text-2xl font-bold text-slate-800">{fmt$(job.revenue)}</p>
         </div>
         <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
-          <p className="text-xs text-slate-500 uppercase tracking-wide mb-1">Fee Costs</p>
+          <p className="text-xs text-slate-500 uppercase tracking-wide mb-1">{t('jobDetail.feeCosts')}</p>
           <p className="text-2xl font-bold text-red-600">{totalCosts > 0 ? '-' + fmt$(totalCosts) : '—'}</p>
         </div>
         <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
-          <p className="text-xs text-slate-500 uppercase tracking-wide mb-1">Reimbursements</p>
+          <p className="text-xs text-slate-500 uppercase tracking-wide mb-1">{t('jobDetail.reimbursements')}</p>
           <p className="text-2xl font-bold text-green-600">{totalIncome > 0 ? '+' + fmt$(totalIncome) : '—'}</p>
         </div>
         <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
-          <p className="text-xs text-slate-500 uppercase tracking-wide mb-1">Net (fees)</p>
+          <p className="text-xs text-slate-500 uppercase tracking-wide mb-1">{t('jobDetail.netFees')}</p>
           <p className={`text-2xl font-bold ${netLineItems >= 0 ? 'text-green-600' : 'text-red-600'}`}>
             {lineItems.length === 0 ? '—' : (netLineItems >= 0 ? '+' : '') + fmt$(netLineItems)}
           </p>
@@ -90,10 +92,10 @@ export default function JobDetail() {
       <div className="grid grid-cols-3 gap-4">
         {/* Job details */}
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
-          <h2 className="font-semibold text-slate-700 mb-4">Details</h2>
+          <h2 className="font-semibold text-slate-700 mb-4">{t('jobDetail.details')}</h2>
           <dl className="space-y-3 text-sm">
             <div>
-              <dt className="text-xs text-slate-500 uppercase tracking-wide mb-0.5">Customer</dt>
+              <dt className="text-xs text-slate-500 uppercase tracking-wide mb-0.5">{t('jobDetail.contactName')}</dt>
               <dd>
                 {customer
                   ? <Link to={`/master/customers/${customer.id}`} className="text-blue-600 hover:underline font-medium">{customer.name}</Link>
@@ -101,7 +103,7 @@ export default function JobDetail() {
               </dd>
             </div>
             <div>
-              <dt className="text-xs text-slate-500 uppercase tracking-wide mb-0.5">Vehicle</dt>
+              <dt className="text-xs text-slate-500 uppercase tracking-wide mb-0.5">{t('jobDetail.vehicleLabel')}</dt>
               <dd>
                 {vehicle
                   ? <Link to={`/master/vehicles/${vehicle.id}`} className="text-blue-600 hover:underline font-medium">{vehicle.year} {vehicle.make} {vehicle.model}</Link>
@@ -109,25 +111,25 @@ export default function JobDetail() {
               </dd>
             </div>
             <div>
-              <dt className="text-xs text-slate-500 uppercase tracking-wide mb-0.5">Driver</dt>
-              <dd className="font-medium text-slate-700">{driver?.name ?? <span className="text-slate-400">Unassigned</span>}</dd>
+              <dt className="text-xs text-slate-500 uppercase tracking-wide mb-0.5">{t('jobDetail.driverLabel')}</dt>
+              <dd className="font-medium text-slate-700">{driver?.name ?? <span className="text-slate-400">{t('jobDetail.unassigned')}</span>}</dd>
             </div>
             <div>
-              <dt className="text-xs text-slate-500 uppercase tracking-wide mb-0.5">Recurrence</dt>
+              <dt className="text-xs text-slate-500 uppercase tracking-wide mb-0.5">{t('jobDetail.recurrenceLabel')}</dt>
               <dd className="text-slate-700 capitalize">{job.recurrence.replace('_', '-')}</dd>
             </div>
             <div>
-              <dt className="text-xs text-slate-500 uppercase tracking-wide mb-0.5">Start Date</dt>
+              <dt className="text-xs text-slate-500 uppercase tracking-wide mb-0.5">{t('jobDetail.startDateLabel')}</dt>
               <dd className="text-slate-700">{job.startDate}</dd>
             </div>
             {job.endDate && (
               <div>
-                <dt className="text-xs text-slate-500 uppercase tracking-wide mb-0.5">End Date</dt>
+                <dt className="text-xs text-slate-500 uppercase tracking-wide mb-0.5">{t('jobDetail.endDateLabel')}</dt>
                 <dd className="text-slate-700">{job.endDate}</dd>
               </div>
             )}
             <div>
-              <dt className="text-xs text-slate-500 uppercase tracking-wide mb-0.5">Status</dt>
+              <dt className="text-xs text-slate-500 uppercase tracking-wide mb-0.5">{t('jobDetail.statusLabel')}</dt>
               <dd><Badge value={job.status} /></dd>
             </div>
           </dl>
@@ -136,10 +138,10 @@ export default function JobDetail() {
         {/* Line items */}
         <div className="col-span-2 bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
           <div className="px-5 py-4 border-b border-slate-100">
-            <h2 className="font-semibold text-slate-700">Fees &amp; Reimbursements</h2>
+            <h2 className="font-semibold text-slate-700">{t('jobDetail.feesTable')}</h2>
           </div>
           {lineItems.length === 0 ? (
-            <p className="px-5 py-8 text-center text-slate-400 text-sm">No fees or reimbursements recorded</p>
+            <p className="px-5 py-8 text-center text-slate-400 text-sm">{t('jobDetail.noFees')}</p>
           ) : (
             <table className="w-full text-sm">
               <thead>

@@ -171,6 +171,29 @@ export function profitByDriver(range: DateRange, data: DataSnapshot): ProfitRow[
     .sort((a, b) => b.netProfit - a.netProfit);
 }
 
+/** One row per calendar month within range, sorted most-recent first. */
+export function profitByMonthRange(range: DateRange, data: DataSnapshot): ProfitRow[] {
+  const result: ProfitRow[] = [];
+  // Walk from end month down to start month
+  const startFloor = new Date(range.startDate.slice(0, 7) + '-01');
+  let cursor = new Date(range.endDate.slice(0, 7) + '-01');
+  while (cursor >= startFloor) {
+    const y = cursor.getFullYear(), m = cursor.getMonth();
+    const monthRange: DateRange = {
+      startDate: new Date(y, m, 1).toISOString().slice(0, 10),
+      endDate: new Date(y, m + 1, 0).toISOString().slice(0, 10),
+    };
+    const label = cursor.toLocaleString('default', { month: 'short', year: 'numeric' });
+    const periodJobs = activeJobs(monthRange, data);
+    const revenue = periodJobs.reduce((s, j) => s + j.revenue, 0);
+    const costs = periodJobs.reduce((s, j) => j.revenue - jobNetProfit(j.id, monthRange, data), 0);
+    const netProfit = revenue - costs;
+    result.push({ id: label, label, revenue, costs, netProfit, margin: revenue > 0 ? (netProfit / revenue) * 100 : 0 });
+    cursor = new Date(y, m - 1, 1);
+  }
+  return result; // newest first
+}
+
 export function profitByPeriod(months: number, data: DataSnapshot): ProfitRow[] {
   const result: ProfitRow[] = [];
   const now = new Date();

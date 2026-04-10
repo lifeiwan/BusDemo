@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { profitByJobGroup, currentMonthRange } from '../lib/profit';
 import { useData } from '../context/DataContext';
 import ProfitTable from '../components/ProfitTable';
@@ -11,6 +12,7 @@ type FormState = Omit<JobGroup, 'id'>;
 const blank: FormState = { name: '', type: 'route', description: '' };
 
 export default function JobGroups() {
+  const { t } = useTranslation();
   const data = useData();
   const { jobGroups, jobs, addJobGroup, updateJobGroup, deleteJobGroup } = data;
   const range = useMemo(currentMonthRange, []);
@@ -25,27 +27,24 @@ export default function JobGroups() {
 
   function save() {
     if (!form.name.trim()) return;
-    if (modal.editing) {
-      updateJobGroup({ ...modal.editing, ...form });
-    } else {
-      addJobGroup(form);
-    }
+    if (modal.editing) updateJobGroup({ ...modal.editing, ...form });
+    else addJobGroup(form);
     close();
   }
 
   function del(jg: JobGroup) {
-    if (window.confirm(`Delete "${jg.name}"? This cannot be undone.`)) deleteJobGroup(jg.id);
+    if (window.confirm(t('jobGroups.confirmDelete', { name: jg.name }))) deleteJobGroup(jg.id);
   }
 
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">Job Groups</h1>
-          <p className="text-sm text-slate-500 mt-1">Route contracts and one-time job categories</p>
+          <h1 className="text-2xl font-bold text-slate-800">{t('jobGroups.title')}</h1>
+          <p className="text-sm text-slate-500 mt-1">{t('jobGroups.subtitle')}</p>
         </div>
         <button onClick={openAdd} className="px-4 py-2 bg-blue-500 text-white text-sm font-medium rounded-lg hover:bg-blue-600 transition-colors">
-          + Add Job Group
+          {t('jobGroups.add')}
         </button>
       </div>
 
@@ -57,7 +56,6 @@ export default function JobGroups() {
           const displayJobs = groupJobs.slice(0, 5);
           return (
             <div key={jg.id} className="bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col">
-              {/* Card header */}
               <div className="p-4 flex items-start justify-between gap-2">
                 <div>
                   <div className="flex items-center gap-2 mb-1">
@@ -67,45 +65,35 @@ export default function JobGroups() {
                   {jg.description && <p className="text-sm text-slate-500">{jg.description}</p>}
                 </div>
                 <div className="flex gap-1 shrink-0">
-                  <button onClick={() => openEdit(jg)} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors" title="Edit">✎</button>
-                  <button onClick={() => del(jg)} className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors" title="Delete">✕</button>
+                  <button onClick={() => openEdit(jg)} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors" title={t('common.edit')}>✎</button>
+                  <button onClick={() => del(jg)} className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors" title={t('common.delete')}>✕</button>
                 </div>
               </div>
 
-              {/* Jobs list */}
               <div className="border-t border-slate-100 px-4 py-2 flex-1">
                 {groupJobs.length === 0 ? (
-                  <p className="text-xs text-slate-400 py-1">No jobs</p>
+                  <p className="text-xs text-slate-400 py-1">{t('jobGroups.noJobs')}</p>
                 ) : (
                   <ul className="space-y-1">
                     {displayJobs.map(j => (
                       <li key={j.id} className="flex items-center justify-between text-sm gap-2">
-                        <Link
-                          to={`/profit/jobs/${j.id}`}
-                          className="text-blue-600 hover:underline truncate"
-                        >
-                          {j.name}
-                        </Link>
+                        <Link to={`/profit/jobs/${j.id}`} className="text-blue-600 hover:underline truncate">{j.name}</Link>
                         <Badge value={j.status} />
                       </li>
                     ))}
                     {groupJobs.length > 5 && (
                       <li className="text-xs text-slate-400 pt-1">
-                        +{groupJobs.length - 5} more — <Link to="/profit/jobs" className="text-blue-500 hover:underline">view all</Link>
+                        {t('common.more', { count: groupJobs.length - 5 })} — <Link to="/profit/jobs" className="text-blue-500 hover:underline">{t('common.viewAll')}</Link>
                       </li>
                     )}
                   </ul>
                 )}
               </div>
 
-              {/* Footer */}
               <div className="border-t border-slate-100 px-4 py-2 flex items-center justify-between">
-                <span className="text-xs text-slate-400">{groupJobs.length} job{groupJobs.length !== 1 ? 's' : ''}</span>
-                <Link
-                  to="/profit/profitability?tab=Job+Group"
-                  className="text-xs text-blue-500 hover:text-blue-700 font-medium hover:underline"
-                >
-                  View profitability →
+                <span className="text-xs text-slate-400">{groupJobs.length} {t('sidebar.jobs').toLowerCase()}</span>
+                <Link to="/profit/profitability?tab=Job+Group" className="text-xs text-blue-500 hover:text-blue-700 font-medium hover:underline">
+                  {t('jobGroups.viewProfitability')}
                 </Link>
               </div>
             </div>
@@ -115,38 +103,38 @@ export default function JobGroups() {
 
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
         <div className="px-5 py-4 border-b border-slate-100">
-          <h2 className="font-semibold text-slate-700">Profitability by Job Group (Current Month)</h2>
+          <h2 className="font-semibold text-slate-700">{t('profitability.title')} — {t('jobGroups.title')}</h2>
         </div>
         <ProfitTable rows={rows} />
       </div>
 
       {modal.open && (
-        <Modal title={modal.editing ? 'Edit Job Group' : 'Add Job Group'} onClose={close}>
+        <Modal title={modal.editing ? t('jobGroups.editTitle') : t('jobGroups.addTitle')} onClose={close}>
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Name *</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">{t('common.name')} *</label>
               <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
                 className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="e.g. Shuttle Routes" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Type</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">{t('common.type')}</label>
               <select value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value as JobGroup['type'] }))}
                 className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                <option value="route">Route (recurring)</option>
-                <option value="one_time">One-Time</option>
+                <option value="route">{t('jobGroups.typeRoute')}</option>
+                <option value="one_time">{t('jobGroups.typeOneTime')}</option>
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Description</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">{t('common.description')}</label>
               <textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
                 rows={3} className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
             </div>
             <div className="flex gap-2 pt-2">
               <button onClick={save} className="flex-1 bg-blue-500 text-white py-2 rounded-lg text-sm font-medium hover:bg-blue-600 transition-colors">
-                {modal.editing ? 'Save Changes' : 'Add Job Group'}
+                {modal.editing ? t('common.save') : t('jobGroups.add')}
               </button>
               <button onClick={close} className="flex-1 border border-slate-300 text-slate-600 py-2 rounded-lg text-sm font-medium hover:bg-slate-50 transition-colors">
-                Cancel
+                {t('common.cancel')}
               </button>
             </div>
           </div>

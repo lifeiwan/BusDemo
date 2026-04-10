@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useData } from '../context/DataContext';
 import Badge from '../components/Badge';
 import JobModal from '../components/JobModal';
@@ -10,24 +11,24 @@ function fmt$(n: number) {
 }
 
 export default function Jobs() {
+  const { t } = useTranslation();
   const { jobs, vehicles, drivers, customers, jobGroups, jobLineItems, deleteJob } = useData();
-
   const [modal, setModal] = useState<{ open: boolean; editing: Job | null }>({ open: false, editing: null });
 
   function del(j: Job) {
-    if (window.confirm(`Delete "${j.name}"?`)) deleteJob(j.id);
+    if (window.confirm(t('jobs.confirmDelete', { name: j.name }))) deleteJob(j.id);
   }
 
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">Jobs</h1>
-          <p className="text-sm text-slate-500 mt-1">{jobs.length} total jobs</p>
+          <h1 className="text-2xl font-bold text-slate-800">{t('jobs.title')}</h1>
+          <p className="text-sm text-slate-500 mt-1">{t('jobs.subtitle', { count: jobs.length })}</p>
         </div>
         <button onClick={() => setModal({ open: true, editing: null })}
           className="px-4 py-2 bg-blue-500 text-white text-sm font-medium rounded-lg hover:bg-blue-600 transition-colors">
-          + Add Job
+          {t('jobs.add')}
         </button>
       </div>
 
@@ -35,7 +36,7 @@ export default function Jobs() {
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-slate-50 border-b border-slate-200">
-              {['Job', 'Group', 'Customer', 'Vehicle', 'Driver', 'Revenue', 'Status', ''].map(h => (
+              {[t('jobs.title'), t('jobs.jobGroup'), t('jobs.customer'), t('jobs.vehicle'), t('jobs.driver'), t('jobs.revenue'), t('common.status'), ''].map(h => (
                 <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide whitespace-nowrap">{h}</th>
               ))}
             </tr>
@@ -51,7 +52,7 @@ export default function Jobs() {
                 <tr key={job.id} className="border-b border-slate-100 hover:bg-slate-50">
                   <td className="px-4 py-3 font-medium text-slate-800">
                     <Link to={`/profit/jobs/${job.id}`} className="text-blue-600 hover:underline">{job.name}</Link>
-                    {lineItemCount > 0 && <span className="ml-1.5 text-xs bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-full">{lineItemCount} fees</span>}
+                    {lineItemCount > 0 && <span className="ml-1.5 text-xs bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-full">{lineItemCount} {t('jobs.fees')}</span>}
                   </td>
                   <td className="px-4 py-3 text-slate-600">{jg?.name ?? '—'}</td>
                   <td className="px-4 py-3">
@@ -66,9 +67,9 @@ export default function Jobs() {
                   <td className="px-4 py-3">
                     <div className="flex gap-1">
                       <button onClick={() => setModal({ open: true, editing: job })}
-                        className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors" title="Edit">✎</button>
+                        className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors" title={t('common.edit')}>✎</button>
                       <button onClick={() => del(job)}
-                        className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors" title="Delete">✕</button>
+                        className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors" title={t('common.delete')}>✕</button>
                     </div>
                   </td>
                 </tr>

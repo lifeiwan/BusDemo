@@ -1,13 +1,21 @@
 import { Link, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
-const sections = [
-  { label: 'Dashboard',     path: '/',       prefix: '' },
-  { label: 'Profit Center', path: '/profit/job-groups', prefix: '/profit' },
-  { label: 'Master Data',   path: '/master/vehicles',   prefix: '/master' },
+const LANGS = [
+  { code: 'en', label: 'EN' },
+  { code: 'zh', label: '中' },
+  { code: 'es', label: 'ES' },
 ];
 
 export default function TopNav() {
   const { pathname } = useLocation();
+  const { t, i18n } = useTranslation();
+
+  const sections = [
+    { label: t('nav.dashboard'),    path: '/',                    prefix: '' },
+    { label: t('nav.profitCenter'), path: '/profit/job-groups',   prefix: '/profit' },
+    { label: t('nav.masterData'),   path: '/master/vehicles',     prefix: '/master' },
+  ];
 
   function isActive(prefix: string) {
     if (prefix === '') return pathname === '/';
@@ -19,7 +27,7 @@ export default function TopNav() {
       <span className="font-bold text-lg tracking-tight select-none">
         Eva<span className="text-blue-400">Bus</span>
       </span>
-      <nav className="flex gap-1">
+      <nav className="flex gap-1 flex-1">
         {sections.map(s => (
           <Link
             key={s.path}
@@ -34,6 +42,22 @@ export default function TopNav() {
           </Link>
         ))}
       </nav>
+      {/* Language switcher */}
+      <div className="flex gap-1">
+        {LANGS.map(lang => (
+          <button
+            key={lang.code}
+            onClick={() => i18n.changeLanguage(lang.code)}
+            className={`px-2.5 py-1 rounded text-xs font-semibold transition-colors ${
+              i18n.resolvedLanguage === lang.code
+                ? 'bg-blue-500 text-white'
+                : 'text-slate-400 hover:bg-slate-700 hover:text-white'
+            }`}
+          >
+            {lang.label}
+          </button>
+        ))}
+      </div>
     </header>
   );
 }

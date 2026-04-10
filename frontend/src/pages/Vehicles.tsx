@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useData } from '../context/DataContext';
 import Badge from '../components/Badge';
 import Modal from '../components/Modal';
@@ -9,6 +10,7 @@ type FormState = Omit<Vehicle, 'id'>;
 const blank: FormState = { year: new Date().getFullYear(), make: '', model: '', vin: '', status: 'active', mileage: 0, color: '' };
 
 export default function Vehicles() {
+  const { t } = useTranslation();
   const { vehicles, maintenanceEntries, addVehicle, updateVehicle, deleteVehicle } = useData();
 
   const [modal, setModal] = useState<{ open: boolean; editing: Vehicle | null }>({ open: false, editing: null });
@@ -30,7 +32,7 @@ export default function Vehicles() {
   }
 
   function del(v: Vehicle) {
-    if (window.confirm(`Delete "${v.year} ${v.make} ${v.model}"?`)) deleteVehicle(v.id);
+    if (window.confirm(t('vehicles.confirmDelete', { name: `${v.year} ${v.make} ${v.model}` }))) deleteVehicle(v.id);
   }
 
   const lastSvc = (id: number) => {
@@ -45,11 +47,11 @@ export default function Vehicles() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">Vehicles</h1>
-          <p className="text-sm text-slate-500 mt-1">{vehicles.length} vehicles in fleet</p>
+          <h1 className="text-2xl font-bold text-slate-800">{t('vehicles.title')}</h1>
+          <p className="text-sm text-slate-500 mt-1">{t('vehicles.subtitle', { count: vehicles.length })}</p>
         </div>
         <button onClick={openAdd} className="px-4 py-2 bg-blue-500 text-white text-sm font-medium rounded-lg hover:bg-blue-600 transition-colors">
-          + Add Vehicle
+          {t('vehicles.add')}
         </button>
       </div>
 
@@ -57,7 +59,7 @@ export default function Vehicles() {
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-slate-50 border-b border-slate-200">
-              {['Vehicle', 'VIN', 'Color', 'Mileage', 'Status', 'Last Service', ''].map(h => (
+              {[t('vehicles.vehicle'), t('vehicles.vin'), t('vehicles.color'), t('vehicles.mileage'), t('common.status'), t('vehicles.lastService'), ''].map(h => (
                 <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide whitespace-nowrap">{h}</th>
               ))}
             </tr>
@@ -77,8 +79,8 @@ export default function Vehicles() {
                 <td className="px-4 py-3 text-slate-500">{lastSvc(v.id)}</td>
                 <td className="px-4 py-3">
                   <div className="flex gap-1">
-                    <button onClick={() => openEdit(v)} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors" title="Edit">✎</button>
-                    <button onClick={() => del(v)} className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors" title="Delete">✕</button>
+                    <button onClick={() => openEdit(v)} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors" title={t('common.edit')}>✎</button>
+                    <button onClick={() => del(v)} className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors" title={t('common.delete')}>✕</button>
                   </div>
                 </td>
               </tr>
@@ -88,57 +90,57 @@ export default function Vehicles() {
       </div>
 
       {modal.open && (
-        <Modal title={modal.editing ? 'Edit Vehicle' : 'Add Vehicle'} onClose={close}>
+        <Modal title={modal.editing ? t('vehicles.editTitle') : t('vehicles.addTitle')} onClose={close}>
           <div className="space-y-4">
             <div className="grid grid-cols-3 gap-3">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Year</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1">{t('vehicles.year')}</label>
                 <input type="number" value={form.year} onChange={set('year')} min={1990} max={2030}
                   className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Make *</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1">{t('vehicles.make')} *</label>
                 <input value={form.make} onChange={set('make')}
                   className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Ford" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Model *</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1">{t('vehicles.model')} *</label>
                 <input value={form.model} onChange={set('model')}
                   className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="F-150" />
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">VIN</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">{t('vehicles.vin')}</label>
               <input value={form.vin} onChange={set('vin')}
                 className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500" />
             </div>
             <div className="grid grid-cols-3 gap-3">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Color</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1">{t('vehicles.color')}</label>
                 <input value={form.color} onChange={set('color')}
                   className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="White" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Mileage</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1">{t('vehicles.mileage')}</label>
                 <input type="number" value={form.mileage} onChange={set('mileage')} min={0}
                   className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Status</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1">{t('common.status')}</label>
                 <select value={form.status} onChange={set('status')}
                   className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                  <option value="active">Active</option>
-                  <option value="maintenance">Maintenance</option>
-                  <option value="out_of_service">Out of Service</option>
+                  <option value="active">{t('status.active')}</option>
+                  <option value="maintenance">{t('status.maintenance')}</option>
+                  <option value="out_of_service">{t('status.out_of_service')}</option>
                 </select>
               </div>
             </div>
             <div className="flex gap-2 pt-2">
               <button onClick={save} className="flex-1 bg-blue-500 text-white py-2 rounded-lg text-sm font-medium hover:bg-blue-600 transition-colors">
-                {modal.editing ? 'Save Changes' : 'Add Vehicle'}
+                {modal.editing ? t('common.save') : t('vehicles.add')}
               </button>
               <button onClick={close} className="flex-1 border border-slate-300 text-slate-600 py-2 rounded-lg text-sm font-medium hover:bg-slate-50 transition-colors">
-                Cancel
+                {t('common.cancel')}
               </button>
             </div>
           </div>

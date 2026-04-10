@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next';
+
 const colorMap: Record<string, string> = {
   active:         'bg-green-100 text-green-800',
   maintenance:    'bg-yellow-100 text-yellow-800',
@@ -15,10 +17,12 @@ const colorMap: Record<string, string> = {
 };
 
 export default function Badge({ value }: { value: string }) {
+  const { t } = useTranslation();
   const cls = colorMap[value] ?? 'bg-slate-100 text-slate-600';
+  const label = t(`status.${value}`, { defaultValue: value.replace(/_/g, ' ') });
   return (
     <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-semibold ${cls}`}>
-      {value.replace(/_/g, ' ')}
+      {label}
     </span>
   );
 }
