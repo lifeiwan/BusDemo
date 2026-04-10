@@ -1,14 +1,12 @@
 import { useState, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import ProfitTable from '../components/ProfitTable';
 import {
-  profitByJobGroup,
-  profitByVehicle,
-  profitByCustomer,
-  profitByDriver,
-  profitByPeriod,
+  profitByJobGroup, profitByVehicle, profitByCustomer, profitByDriver, profitByPeriod,
   currentMonthRange,
 } from '../lib/profit';
+import { useData } from '../context/DataContext';
 import type { ProfitRow } from '../types';
 
 const TABS = ['Job Group', 'Vehicle', 'Customer', 'Driver', 'Period'] as const;
@@ -19,18 +17,23 @@ function fmt$(n: number) {
 }
 
 export default function Profitability() {
-  const [activeTab, setActiveTab] = useState<Tab>('Period');
+  const [searchParams] = useSearchParams();
+  const initialTab = (TABS as readonly string[]).includes(searchParams.get('tab') ?? '')
+    ? searchParams.get('tab') as Tab
+    : 'Period';
+  const [activeTab, setActiveTab] = useState<Tab>(initialTab);
+  const data = useData();
   const range = useMemo(currentMonthRange, []);
 
   const rows = useMemo((): ProfitRow[] => {
     switch (activeTab) {
-      case 'Job Group': return profitByJobGroup(range);
-      case 'Vehicle':   return profitByVehicle(range);
-      case 'Customer':  return profitByCustomer(range);
-      case 'Driver':    return profitByDriver(range);
-      case 'Period':    return profitByPeriod(6);
+      case 'Job Group': return profitByJobGroup(range, data);
+      case 'Vehicle':   return profitByVehicle(range, data);
+      case 'Customer':  return profitByCustomer(range, data);
+      case 'Driver':    return profitByDriver(range, data);
+      case 'Period':    return profitByPeriod(6, data);
     }
-  }, [activeTab, range]);
+  }, [activeTab, range, data]);
 
   const chartData = rows.map(r => ({
     name: r.label.length > 14 ? r.label.slice(0, 12) + '…' : r.label,
@@ -52,9 +55,7 @@ export default function Profitability() {
             key={tab}
             onClick={() => setActiveTab(tab)}
             className={`px-4 py-2 text-sm font-medium rounded-t transition-colors ${
-              activeTab === tab
-                ? 'bg-blue-500 text-white'
-                : 'text-slate-600 hover:text-slate-800'
+              activeTab === tab ? 'bg-blue-500 text-white' : 'text-slate-600 hover:text-slate-800'
             }`}
           >
             {tab}

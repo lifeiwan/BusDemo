@@ -1,13 +1,16 @@
 import { useMemo } from 'react';
 import StatCard from '../components/StatCard';
 import { getDashboardKPIs, currentMonthRange } from '../lib/profit';
+import { useData } from '../context/DataContext';
 
 function fmt$(n: number) {
   return '$' + Math.abs(n).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 }
 
 export default function Dashboard() {
-  const kpis = useMemo(() => getDashboardKPIs(currentMonthRange()), []);
+  const data = useData();
+  const range = useMemo(currentMonthRange, []);
+  const kpis = useMemo(() => getDashboardKPIs(range, data), [range, data]);
 
   return (
     <div>
@@ -28,16 +31,10 @@ export default function Dashboard() {
           sparkline={kpis.sparklineProfit}
           positive={kpis.totalProfit >= 0}
         />
-        <StatCard
-          label="Profit Margin"
-          value={kpis.profitMargin.toFixed(1) + '%'}
-        />
+        <StatCard label="Profit Margin" value={kpis.profitMargin.toFixed(1) + '%'} />
         <StatCard label="Top Customer" value={kpis.topCustomer} />
         <StatCard label="Most Profitable Vehicle" value={kpis.mostProfitableVehicle} />
-        <StatCard
-          label="Fleet Utilization"
-          value={kpis.fleetUtilizationRate.toFixed(0) + '%'}
-        />
+        <StatCard label="Fleet Utilization" value={kpis.fleetUtilizationRate.toFixed(0) + '%'} />
       </div>
     </div>
   );

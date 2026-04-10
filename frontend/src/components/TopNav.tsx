@@ -17,7 +17,7 @@ export default function TopNav() {
   return (
     <header className="bg-slate-800 text-white flex items-center px-6 h-14 shrink-0 gap-8 shadow-md z-10">
       <span className="font-bold text-lg tracking-tight select-none">
-        Fleet<span className="text-blue-400">Pro</span>
+        Eva<span className="text-blue-400">Bus</span>
       </span>
       <nav className="flex gap-1">
         {sections.map(s => (

@@ -1,5 +1,5 @@
 import { useParams, Navigate, Link } from 'react-router-dom';
-import { customers, jobs, vehicles, drivers, jobGroups } from '../data';
+import { useData } from '../context/DataContext';
 import Badge from '../components/Badge';
 
 function fmt$(n: number) {
@@ -8,6 +8,7 @@ function fmt$(n: number) {
 
 export default function CustomerDetail() {
   const { id } = useParams();
+  const { customers, jobs, vehicles, drivers, jobGroups } = useData();
   const customer = customers.find(c => c.id === Number(id));
   if (!customer) return <Navigate to="/master/customers" replace />;
 
