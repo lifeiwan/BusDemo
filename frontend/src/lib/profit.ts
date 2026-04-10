@@ -8,6 +8,7 @@ import type {
   JobLineItem,
   MaintenanceEntry,
   FuelEntry,
+  Inspection,
   InsurancePolicy,
   ParkingEntry,
   DriverCost,
@@ -22,6 +23,7 @@ export interface DataSnapshot {
   jobLineItems: JobLineItem[];
   maintenanceEntries: MaintenanceEntry[];
   fuelEntries: FuelEntry[];
+  inspections: Inspection[];
   insurancePolicies: InsurancePolicy[];
   parkingEntries: ParkingEntry[];
   driverCosts: DriverCost[];
@@ -125,7 +127,7 @@ export function profitByJobGroup(range: DateRange, data: DataSnapshot): ProfitRo
     .map(jg => {
       const jgJobs = activeJobs(range, data).filter(j => j.jobGroupId === jg.id);
       const revenue = jgJobs.reduce((s, j) => s + j.revenue, 0);
-      const costs = jgJobs.reduce((s, j) => (j.revenue - jobNetProfit(j.id, range, data)), 0);
+      const costs = jgJobs.reduce((s, j) => s + (j.revenue - jobNetProfit(j.id, range, data)), 0);
       const netProfit = revenue - costs;
       return { id: jg.id, label: jg.name, revenue, costs, netProfit, margin: revenue > 0 ? (netProfit / revenue) * 100 : 0 };
     })
@@ -150,7 +152,7 @@ export function profitByCustomer(range: DateRange, data: DataSnapshot): ProfitRo
     .map(c => {
       const cJobs = activeJobs(range, data).filter(j => j.customerId === c.id);
       const revenue = cJobs.reduce((s, j) => s + j.revenue, 0);
-      const costs = cJobs.reduce((s, j) => (j.revenue - jobNetProfit(j.id, range, data)), 0);
+      const costs = cJobs.reduce((s, j) => s + (j.revenue - jobNetProfit(j.id, range, data)), 0);
       const netProfit = revenue - costs;
       return { id: c.id, label: c.name, revenue, costs, netProfit, margin: revenue > 0 ? (netProfit / revenue) * 100 : 0 };
     })
@@ -186,7 +188,7 @@ export function profitByMonthRange(range: DateRange, data: DataSnapshot): Profit
     const label = cursor.toLocaleString('default', { month: 'short', year: 'numeric' });
     const periodJobs = activeJobs(monthRange, data);
     const revenue = periodJobs.reduce((s, j) => s + j.revenue, 0);
-    const costs = periodJobs.reduce((s, j) => j.revenue - jobNetProfit(j.id, monthRange, data), 0);
+    const costs = periodJobs.reduce((s, j) => s + (j.revenue - jobNetProfit(j.id, monthRange, data)), 0);
     const netProfit = revenue - costs;
     result.push({ id: label, label, revenue, costs, netProfit, margin: revenue > 0 ? (netProfit / revenue) * 100 : 0 });
     cursor = new Date(y, m - 1, 1);
@@ -207,7 +209,7 @@ export function profitByPeriod(months: number, data: DataSnapshot): ProfitRow[] 
     const label = d.toLocaleString('default', { month: 'short', year: 'numeric' });
     const periodJobs = activeJobs(range, data);
     const revenue = periodJobs.reduce((s, j) => s + j.revenue, 0);
-    const costs = periodJobs.reduce((s, j) => (j.revenue - jobNetProfit(j.id, range, data)), 0);
+    const costs = periodJobs.reduce((s, j) => s + (j.revenue - jobNetProfit(j.id, range, data)), 0);
     const netProfit = revenue - costs;
     result.push({ id: label, label, revenue, costs, netProfit, margin: revenue > 0 ? (netProfit / revenue) * 100 : 0 });
   }
