@@ -7,7 +7,7 @@ import Modal from '../components/Modal';
 import type { Vehicle } from '../types';
 
 type FormState = Omit<Vehicle, 'id'>;
-const blank: FormState = { year: new Date().getFullYear(), make: '', model: '', vin: '', status: 'active', mileage: 0, color: '' };
+const blank: FormState = { year: new Date().getFullYear(), make: '', model: '', vin: '', licensePlate: '', status: 'active', mileage: 0, color: '' };
 
 export default function Vehicles() {
   const { t } = useTranslation();
@@ -18,7 +18,7 @@ export default function Vehicles() {
 
   function openAdd() { setForm(blank); setModal({ open: true, editing: null }); }
   function openEdit(v: Vehicle) {
-    setForm({ year: v.year, make: v.make, model: v.model, vin: v.vin, status: v.status, mileage: v.mileage, color: v.color });
+    setForm({ year: v.year, make: v.make, model: v.model, vin: v.vin, licensePlate: v.licensePlate, status: v.status, mileage: v.mileage, color: v.color });
     setModal({ open: true, editing: v });
   }
   function close() { setModal({ open: false, editing: null }); }
@@ -59,7 +59,7 @@ export default function Vehicles() {
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-slate-50 border-b border-slate-200">
-              {[t('vehicles.vehicle'), t('vehicles.vin'), t('vehicles.color'), t('vehicles.mileage'), t('common.status'), t('vehicles.lastService'), ''].map(h => (
+              {[t('vehicles.vehicle'), t('vehicles.licensePlate'), t('vehicles.color'), t('vehicles.mileage'), t('common.status'), t('vehicles.lastService'), ''].map(h => (
                 <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide whitespace-nowrap">{h}</th>
               ))}
             </tr>
@@ -72,7 +72,7 @@ export default function Vehicles() {
                     {v.year} {v.make} {v.model}
                   </Link>
                 </td>
-                <td className="px-4 py-3 text-slate-500 font-mono text-xs">{v.vin}</td>
+                <td className="px-4 py-3 text-slate-600 font-mono text-xs">{v.licensePlate}</td>
                 <td className="px-4 py-3 text-slate-600">{v.color}</td>
                 <td className="px-4 py-3 text-slate-600">{v.mileage.toLocaleString()} mi</td>
                 <td className="px-4 py-3"><Badge value={v.status} /></td>
@@ -109,10 +109,17 @@ export default function Vehicles() {
                   className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="F-150" />
               </div>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">{t('vehicles.vin')}</label>
-              <input value={form.vin} onChange={set('vin')}
-                className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">{t('vehicles.licensePlate')}</label>
+                <input value={form.licensePlate} onChange={set('licensePlate')}
+                  className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="ABC-1234" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">{t('vehicles.vin')}</label>
+                <input value={form.vin} onChange={set('vin')}
+                  className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              </div>
             </div>
             <div className="grid grid-cols-3 gap-3">
               <div>

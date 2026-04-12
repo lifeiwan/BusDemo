@@ -12,6 +12,7 @@ import type {
   InsurancePolicy,
   ParkingEntry,
   DriverCost,
+  GaEntry,
 } from '../types';
 
 export interface DataSnapshot {
@@ -27,6 +28,7 @@ export interface DataSnapshot {
   insurancePolicies: InsurancePolicy[];
   parkingEntries: ParkingEntry[];
   driverCosts: DriverCost[];
+  gaEntries: GaEntry[];
 }
 
 export interface DateRange {
@@ -87,6 +89,12 @@ function parkingCostForVehicle(vehicleId: number, range: DateRange, data: DataSn
     }, 0);
 }
 
+
+function gaCostForRange(range: DateRange, data: DataSnapshot): number {
+  return data.gaEntries
+    .filter(e => inRange(e.date, range))
+    .reduce((s, e) => s + e.amount, 0);
+}
 
 function totalVehicleCosts(vehicleId: number, range: DateRange, data: DataSnapshot): number {
   return (
@@ -219,7 +227,10 @@ export function profitByMonthRange(range: DateRange, data: DataSnapshot): Profit
     };
     const label = cursor.toLocaleString('default', { month: 'short', year: 'numeric' });
     const periodJobs = activeJobs(monthRange, data);
-    const { revenue, costs, netProfit } = groupProfit(periodJobs, monthRange, data);
+    const { revenue, costs: jobCosts, netProfit: jobNetProfitVal } = groupProfit(periodJobs, monthRange, data);
+    const ga = gaCostForRange(monthRange, data);
+    const costs = jobCosts + ga;
+    const netProfit = jobNetProfitVal - ga;
     result.push({ id: label, label, revenue, costs, netProfit, margin: revenue > 0 ? (netProfit / revenue) * 100 : 0 });
     cursor = new Date(y, m - 1, 1);
   }
@@ -238,7 +249,10 @@ export function profitByPeriod(months: number, data: DataSnapshot): ProfitRow[] 
     };
     const label = d.toLocaleString('default', { month: 'short', year: 'numeric' });
     const periodJobs = activeJobs(range, data);
-    const { revenue, costs, netProfit } = groupProfit(periodJobs, range, data);
+    const { revenue, costs: jobCosts, netProfit: jobNetProfitVal } = groupProfit(periodJobs, range, data);
+    const ga = gaCostForRange(range, data);
+    const costs = jobCosts + ga;
+    const netProfit = jobNetProfitVal - ga;
     result.push({ id: label, label, revenue, costs, netProfit, margin: revenue > 0 ? (netProfit / revenue) * 100 : 0 });
   }
   return result;
@@ -263,7 +277,8 @@ export function getDashboardKPIs(range: DateRange, data: DataSnapshot): Dashboar
   const periodData = profitByPeriod(6, data);
 
   const totalRevenue = byVehicle.reduce((s, r) => s + r.revenue, 0);
-  const totalProfit = byVehicle.reduce((s, r) => s + r.netProfit, 0);
+  const gaTotal = gaCostForRange(range, data);
+  const totalProfit = byVehicle.reduce((s, r) => s + r.netProfit, 0) - gaTotal;
   const profitMargin = totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0;
   const topCustomer = byCustomer[0]?.label ?? '—';
   const mostProfitableVehicle = byVehicle[0]?.label ?? '—';

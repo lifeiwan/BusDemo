@@ -12,9 +12,10 @@ export default function Sidebar() {
   ];
 
   const masterItems = [
-    { label: t('sidebar.vehicles'),  path: '/master/vehicles'  },
-    { label: t('sidebar.customers'), path: '/master/customers' },
-    { label: t('sidebar.drivers'),   path: '/master/drivers'   },
+    { label: t('sidebar.vehicles'),    path: '/master/vehicles'    },
+    { label: t('sidebar.customers'),   path: '/master/customers'   },
+    { label: t('sidebar.drivers'),     path: '/master/drivers'     },
+    { label: t('sidebar.gaExpenses'),  path: '/master/ga-expenses' },
   ];
 
   const vehicleSubItems = [

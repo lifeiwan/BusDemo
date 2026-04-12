@@ -2,7 +2,7 @@ import { createContext, useContext, useState } from 'react';
 import type { ReactNode } from 'react';
 import type {
   Vehicle, Driver, Customer, JobGroup, Job, JobLineItem,
-  MaintenanceEntry, FuelEntry, Inspection,
+  MaintenanceEntry, FuelEntry, Inspection, GaEntry,
 } from '../types';
 import {
   vehicles as initVehicles,
@@ -18,6 +18,7 @@ import {
   parkingEntries as initParking,
   driverCosts as initDriverCosts,
   driverVehicleAssignments as initAssignments,
+  gaEntries as initGaEntries,
 } from '../data';
 import type { DataSnapshot } from '../lib/profit';
 
@@ -63,6 +64,10 @@ interface DataContextValue extends DataSnapshot {
   addInspection: (e: Omit<Inspection, 'id'>) => void;
   updateInspection: (e: Inspection) => void;
   deleteInspection: (id: number) => void;
+  // G&A Entries
+  addGaEntry: (e: Omit<GaEntry, 'id'>) => void;
+  updateGaEntry: (e: GaEntry) => void;
+  deleteGaEntry: (id: number) => void;
 }
 
 const DataContext = createContext<DataContextValue | null>(null);
@@ -77,6 +82,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [maintenanceEntries, setMaintenance] = useState(initMaintenance);
   const [fuelEntries, setFuel] = useState(initFuel);
   const [inspections, setInspections] = useState(initInspections);
+  const [gaEntries, setGaEntries] = useState(initGaEntries);
 
   // These are not editable in the UI — kept as-is
   const insurancePolicies = initInsurance;
@@ -88,7 +94,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     // snapshot fields
     vehicles, drivers, customers, jobGroups, jobs,
     jobLineItems, maintenanceEntries, fuelEntries, inspections,
-    insurancePolicies, parkingEntries, driverCosts,
+    insurancePolicies, parkingEntries, driverCosts, gaEntries,
     // DataContext extras (used by Drivers page)
     // @ts-ignore — extend snapshot with non-profit fields
     driverVehicleAssignments,
@@ -138,6 +144,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
     addInspection: e => setInspections(prev => [...prev, { ...e, id: nextId(prev) }]),
     updateInspection: e => setInspections(prev => prev.map(x => x.id === e.id ? e : x)),
     deleteInspection: id => setInspections(prev => prev.filter(x => x.id !== id)),
+
+    // G&A Entries
+    addGaEntry: e => setGaEntries(prev => [...prev, { ...e, id: nextId(prev) }]),
+    updateGaEntry: e => setGaEntries(prev => prev.map(x => x.id === e.id ? e : x)),
+    deleteGaEntry: id => setGaEntries(prev => prev.filter(x => x.id !== id)),
   };
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>;

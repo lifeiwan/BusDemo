@@ -4,6 +4,7 @@ export interface Vehicle {
   make: string;
   model: string;
   vin: string;
+  licensePlate: string;
   status: 'active' | 'maintenance' | 'out_of_service';
   mileage: number;
   color: string;
@@ -128,6 +129,14 @@ export interface DriverCost {
   jobId: number | null;
   date: string;
   type: 'salary' | 'bonus' | 'reimbursement' | 'other';
+  amount: number;
+  notes: string;
+}
+
+export interface GaEntry {
+  id: number;
+  category: string;
+  date: string;
   amount: number;
   notes: string;
 }

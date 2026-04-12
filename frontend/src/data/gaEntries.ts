@@ -1,0 +1,43 @@
+import type { GaEntry } from '../types';
+
+export const GA_CATEGORIES = [
+  'Rent',
+  'Office Payroll',
+  'Office Expenses',
+  'Office Meals',
+  'Mechanics',
+  'Uniform',
+  'Taxes & Licenses',
+  'Legal & Professional',
+  'Accountant',
+  'Travel',
+  'Tolls & Violations',
+  'Training & Conferences',
+  'Insurance',
+] as const;
+
+export const gaEntries: GaEntry[] = [
+  { id: 1,  category: 'Rent',                  date: '2026-01-01', amount: 2500,  notes: 'Monthly office rent' },
+  { id: 2,  category: 'Office Payroll',         date: '2026-01-31', amount: 3200,  notes: 'Admin staff' },
+  { id: 3,  category: 'Insurance',              date: '2026-01-15', amount: 850,   notes: 'General liability' },
+  { id: 4,  category: 'Taxes & Licenses',       date: '2026-01-20', amount: 420,   notes: 'Business license renewal' },
+  { id: 5,  category: 'Office Expenses',        date: '2026-01-10', amount: 180,   notes: 'Supplies' },
+  { id: 6,  category: 'Rent',                   date: '2026-02-01', amount: 2500,  notes: 'Monthly office rent' },
+  { id: 7,  category: 'Office Payroll',         date: '2026-02-28', amount: 3200,  notes: 'Admin staff' },
+  { id: 8,  category: 'Insurance',              date: '2026-02-15', amount: 850,   notes: 'General liability' },
+  { id: 9,  category: 'Office Meals',           date: '2026-02-14', amount: 95,    notes: 'Team lunch' },
+  { id: 10, category: 'Travel',                 date: '2026-02-20', amount: 310,   notes: 'Conference trip' },
+  { id: 11, category: 'Rent',                   date: '2026-03-01', amount: 2500,  notes: 'Monthly office rent' },
+  { id: 12, category: 'Office Payroll',         date: '2026-03-31', amount: 3200,  notes: 'Admin staff' },
+  { id: 13, category: 'Insurance',              date: '2026-03-15', amount: 850,   notes: 'General liability' },
+  { id: 14, category: 'Legal & Professional',   date: '2026-03-05', amount: 750,   notes: 'Contract review' },
+  { id: 15, category: 'Accountant',             date: '2026-03-10', amount: 600,   notes: 'Monthly bookkeeping' },
+  { id: 16, category: 'Tolls & Violations',     date: '2026-03-18', amount: 85,    notes: 'Fleet tolls' },
+  { id: 17, category: 'Uniform',                date: '2026-03-22', amount: 240,   notes: 'Driver uniforms' },
+  { id: 18, category: 'Mechanics',              date: '2026-03-25', amount: 480,   notes: 'Shop labor' },
+  { id: 19, category: 'Rent',                   date: '2026-04-01', amount: 2500,  notes: 'Monthly office rent' },
+  { id: 20, category: 'Office Payroll',         date: '2026-04-10', amount: 3200,  notes: 'Admin staff' },
+  { id: 21, category: 'Insurance',              date: '2026-04-15', amount: 850,   notes: 'General liability' },
+  { id: 22, category: 'Training & Conferences', date: '2026-04-08', amount: 390,   notes: 'Safety training' },
+  { id: 23, category: 'Office Expenses',        date: '2026-04-05', amount: 145,   notes: 'Printer ink, paper' },
+];

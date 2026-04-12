@@ -14,6 +14,7 @@ import Customers from './pages/Customers';
 import CustomerDetail from './pages/CustomerDetail';
 import Drivers from './pages/Drivers';
 import JobDetail from './pages/JobDetail';
+import GaExpenses from './pages/GaExpenses';
 import Login from './pages/Login';
 
 function ProtectedRoute({ children }: { children: ReactNode }) {
@@ -45,6 +46,7 @@ function AppShell() {
                     <Route path="/master/customers" element={<Customers />} />
                     <Route path="/master/customers/:id" element={<CustomerDetail />} />
                     <Route path="/master/drivers" element={<Drivers />} />
+                    <Route path="/master/ga-expenses" element={<GaExpenses />} />
                     <Route path="*" element={<Navigate to="/" replace />} />
                   </Routes>
                 </main>

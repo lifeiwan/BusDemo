@@ -123,7 +123,7 @@ export default function VehicleDetail() {
   return (
     <EntityDetail
       title={`${vehicle.year} ${vehicle.make} ${vehicle.model}`}
-      subtitle={`VIN: ${vehicle.vin} · ${vehicle.mileage.toLocaleString()} mi · ${vehicle.color}`}
+      subtitle={`${vehicle.licensePlate} · VIN: ${vehicle.vin} · ${vehicle.mileage.toLocaleString()} mi · ${vehicle.color}`}
       tabs={[
         { label: 'Fuel', key: 'fuel' },
         { label: 'Maintenance', key: 'maintenance' },
