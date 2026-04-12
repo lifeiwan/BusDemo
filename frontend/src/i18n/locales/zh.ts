@@ -1,4 +1,13 @@
 export default {
+  login: {
+    subtitle: '车队管理系统',
+    username: '用户名',
+    usernamePlaceholder: '请输入用户名',
+    password: '密码',
+    error: '请输入用户名和密码。',
+    submit: '登录',
+    logout: '退出',
+  },
   nav: {
     dashboard: '仪表盘',
     profitCenter: '利润中心',

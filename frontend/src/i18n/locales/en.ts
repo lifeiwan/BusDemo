@@ -1,4 +1,13 @@
 export default {
+  login: {
+    subtitle: 'Fleet Management System',
+    username: 'Username',
+    usernamePlaceholder: 'Enter your username',
+    password: 'Password',
+    error: 'Please enter a username and password.',
+    submit: 'Sign In',
+    logout: 'Sign Out',
+  },
   nav: {
     dashboard: 'Dashboard',
     profitCenter: 'Profit Center',

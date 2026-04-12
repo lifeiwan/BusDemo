@@ -1,4 +1,13 @@
 export default {
+  login: {
+    subtitle: 'Sistema de Gestión de Flota',
+    username: 'Usuario',
+    usernamePlaceholder: 'Ingrese su usuario',
+    password: 'Contraseña',
+    error: 'Por favor ingrese usuario y contraseña.',
+    submit: 'Iniciar Sesión',
+    logout: 'Cerrar Sesión',
+  },
   nav: {
     dashboard: 'Panel',
     profitCenter: 'Centro de Ganancias',

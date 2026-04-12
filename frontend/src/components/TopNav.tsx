@@ -1,5 +1,6 @@
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { useAuth } from '../context/AuthContext';
 
 const LANGS = [
   { code: 'en', label: 'EN' },
@@ -10,6 +11,8 @@ const LANGS = [
 export default function TopNav() {
   const { pathname } = useLocation();
   const { t, i18n } = useTranslation();
+  const { logout } = useAuth();
+  const navigate = useNavigate();
 
   const sections = [
     { label: t('nav.dashboard'),    path: '/',                    prefix: '' },
@@ -58,6 +61,14 @@ export default function TopNav() {
           </button>
         ))}
       </div>
+
+      {/* Logout */}
+      <button
+        onClick={() => { logout(); navigate('/login', { replace: true }); }}
+        className="ml-2 px-3 py-1.5 rounded text-xs font-semibold text-slate-400 hover:bg-slate-700 hover:text-white transition-colors"
+      >
+        {t('login.logout')}
+      </button>
     </header>
   );
 }
