@@ -9,7 +9,8 @@ type FormState = Omit<Job, 'id'>;
 function blankForm(vehicleId = 0, driverId: number | null = null, customerId = 0, jobGroupId = 0): FormState {
   return {
     name: '', jobGroupId, vehicleId, driverId, customerId,
-    revenue: 0, recurrence: 'one_time',
+    revenue: 0, driverPayroll: 0, paymentsReceived: 0,
+    recurrence: 'one_time',
     startDate: new Date().toISOString().slice(0, 10),
     endDate: null, status: 'scheduled',
   };
@@ -41,7 +42,7 @@ export default function JobModal({ editing, onClose }: Props) {
   // Initialise form from editing job or blank
   const [form, setForm] = useState<FormState>(() =>
     editing
-      ? { name: editing.name, jobGroupId: editing.jobGroupId, vehicleId: editing.vehicleId, driverId: editing.driverId, customerId: editing.customerId, revenue: editing.revenue, recurrence: editing.recurrence, startDate: editing.startDate, endDate: editing.endDate, status: editing.status }
+      ? { name: editing.name, jobGroupId: editing.jobGroupId, vehicleId: editing.vehicleId, driverId: editing.driverId, customerId: editing.customerId, revenue: editing.revenue, driverPayroll: editing.driverPayroll, paymentsReceived: editing.paymentsReceived, recurrence: editing.recurrence, startDate: editing.startDate, endDate: editing.endDate, status: editing.status }
       : blankForm(vehicles[0]?.id ?? 0, null, customers[0]?.id ?? 0, jobGroups[0]?.id ?? 0)
   );
 
@@ -74,7 +75,8 @@ export default function JobModal({ editing, onClose }: Props) {
 
   function save() {
     if (!form.name.trim() || !form.vehicleId || !form.customerId || !form.jobGroupId) return;
-    const payload = { ...form, revenue: Number(form.revenue), endDate: form.endDate || null };
+    if (form.driverId && !Number(form.driverPayroll)) return; // payroll required when driver assigned
+    const payload = { ...form, revenue: Number(form.revenue), driverPayroll: Number(form.driverPayroll), paymentsReceived: Number(form.paymentsReceived), endDate: form.endDate || null };
 
     let jobId: number;
     if (editing) {
@@ -167,8 +169,21 @@ export default function JobModal({ editing, onClose }: Props) {
             </select>
           </div>
           <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">
+              {t('jobs.driverPayroll')} {form.driverId ? '*' : <span className="text-slate-400 font-normal">({t('common.optional')})</span>}
+            </label>
+            <input type="number" value={form.driverPayroll} onChange={set('driverPayroll')} min={0}
+              disabled={!form.driverId}
+              className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-slate-50 disabled:text-slate-400" />
+          </div>
+          <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">{t('jobs.revenue')}</label>
             <input type="number" value={form.revenue} onChange={set('revenue')} min={0}
+              className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">{t('jobs.paymentsReceived')}</label>
+            <input type="number" value={form.paymentsReceived} onChange={set('paymentsReceived')} min={0}
               className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
           </div>
           <div>

@@ -73,17 +73,17 @@ export default function JobDetail() {
           <p className="text-2xl font-bold text-slate-800">{fmt$(job.revenue)}</p>
         </div>
         <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
-          <p className="text-xs text-slate-500 uppercase tracking-wide mb-1">{t('jobDetail.feeCosts')}</p>
-          <p className="text-2xl font-bold text-red-600">{totalCosts > 0 ? '-' + fmt$(totalCosts) : '—'}</p>
+          <p className="text-xs text-slate-500 uppercase tracking-wide mb-1">{t('jobDetail.driverCost')}</p>
+          <p className="text-2xl font-bold text-red-600">{job.driverPayroll > 0 ? fmt$(job.driverPayroll) : '—'}</p>
         </div>
         <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
-          <p className="text-xs text-slate-500 uppercase tracking-wide mb-1">{t('jobDetail.reimbursements')}</p>
-          <p className="text-2xl font-bold text-green-600">{totalIncome > 0 ? '+' + fmt$(totalIncome) : '—'}</p>
+          <p className="text-xs text-slate-500 uppercase tracking-wide mb-1">{t('jobDetail.paymentsReceived')}</p>
+          <p className="text-2xl font-bold text-green-600">{job.paymentsReceived > 0 ? fmt$(job.paymentsReceived) : '—'}</p>
         </div>
         <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
-          <p className="text-xs text-slate-500 uppercase tracking-wide mb-1">{t('jobDetail.netFees')}</p>
-          <p className={`text-2xl font-bold ${netLineItems >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-            {lineItems.length === 0 ? '—' : (netLineItems >= 0 ? '+' : '') + fmt$(netLineItems)}
+          <p className="text-xs text-amber-600 uppercase tracking-wide mb-1">{t('jobDetail.accountsReceivable')}</p>
+          <p className={`text-2xl font-bold ${job.revenue - job.paymentsReceived > 0 ? 'text-amber-600' : 'text-slate-400'}`}>
+            {fmt$(job.revenue - job.paymentsReceived)}
           </p>
         </div>
       </div>
@@ -146,7 +146,7 @@ export default function JobDetail() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200">
-                  {['Date', 'Category', 'Type', 'Amount', 'Notes'].map(h => (
+                  {[t('common.date'), t('jobs.feeCategory'), t('jobs.feeType'), t('jobDetail.amount'), t('common.notes')].map(h => (
                     <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">{h}</th>
                   ))}
                 </tr>
@@ -158,7 +158,7 @@ export default function JobDetail() {
                     <td className="px-4 py-3 font-medium text-slate-800">{li.category}</td>
                     <td className="px-4 py-3">
                       <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${li.direction === 'cost' ? 'bg-red-50 text-red-600' : 'bg-green-50 text-green-600'}`}>
-                        {li.direction === 'cost' ? 'Cost' : 'Income'}
+                        {li.direction === 'cost' ? t('jobs.feeCost') : t('jobs.feeIncome')}
                       </span>
                     </td>
                     <td className={`px-4 py-3 font-semibold ${li.direction === 'cost' ? 'text-red-600' : 'text-green-600'}`}>
@@ -170,7 +170,7 @@ export default function JobDetail() {
               </tbody>
               <tfoot>
                 <tr className="bg-slate-50 border-t border-slate-200">
-                  <td colSpan={3} className="px-4 py-3 text-xs font-semibold text-slate-500 uppercase">Net</td>
+                  <td colSpan={3} className="px-4 py-3 text-xs font-semibold text-slate-500 uppercase">{t('jobDetail.netFees')}</td>
                   <td className={`px-4 py-3 font-bold ${netLineItems >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                     {netLineItems >= 0 ? '+' : ''}{fmt$(netLineItems)}
                   </td>

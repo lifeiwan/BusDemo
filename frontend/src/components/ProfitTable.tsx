@@ -7,10 +7,12 @@ function fmt$(n: number) {
 
 interface Props {
   rows: ProfitRow[];
+  showAR?: boolean;
 }
 
-export default function ProfitTable({ rows }: Props) {
+export default function ProfitTable({ rows, showAR }: Props) {
   const { t } = useTranslation();
+  const colSpan = showAR ? 7 : 6;
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
@@ -19,6 +21,7 @@ export default function ProfitTable({ rows }: Props) {
             <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">{t('profitTable.rank')}</th>
             <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">{t('profitTable.name')}</th>
             <th className="text-right px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">{t('profitTable.revenue')}</th>
+            {showAR && <th className="text-right px-4 py-3 text-xs font-semibold text-amber-600 uppercase tracking-wide">{t('profitTable.accountsReceivable')}</th>}
             <th className="text-right px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">{t('profitTable.costs')}</th>
             <th className="text-right px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">{t('profitTable.netProfit')}</th>
             <th className="text-right px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">{t('profitTable.margin')}</th>
@@ -30,6 +33,13 @@ export default function ProfitTable({ rows }: Props) {
               <td className="px-4 py-3 text-slate-400">{i + 1}</td>
               <td className="px-4 py-3 font-medium text-slate-800">{row.label}</td>
               <td className="px-4 py-3 text-right text-slate-700">{fmt$(row.revenue)}</td>
+              {showAR && (
+                <td className="px-4 py-3 text-right">
+                  <span className={`font-semibold ${(row.accountsReceivable ?? 0) > 0 ? 'text-amber-600' : 'text-slate-400'}`}>
+                    {fmt$(row.accountsReceivable ?? 0)}
+                  </span>
+                </td>
+              )}
               <td className="px-4 py-3 text-right text-red-600">{fmt$(row.costs)}</td>
               <td className={`px-4 py-3 text-right font-semibold ${row.netProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                 {row.netProfit < 0 ? '-' : ''}{fmt$(row.netProfit)}
@@ -43,7 +53,7 @@ export default function ProfitTable({ rows }: Props) {
           ))}
           {rows.length === 0 && (
             <tr>
-              <td colSpan={6} className="px-4 py-8 text-center text-slate-400">{t('common.noData')}</td>
+              <td colSpan={colSpan} className="px-4 py-8 text-center text-slate-400">{t('common.noData')}</td>
             </tr>
           )}
         </tbody>

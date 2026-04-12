@@ -186,7 +186,7 @@ export default function Profitability() {
 
       {/* ── Table ── */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
-        <ProfitTable rows={rows} />
+        <ProfitTable rows={rows} showAR={activeKey === 'customer'} />
       </div>
     </div>
   );

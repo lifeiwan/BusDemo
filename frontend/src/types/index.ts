@@ -50,6 +50,8 @@ export interface Job {
   driverId: number | null;
   customerId: number;
   revenue: number;
+  driverPayroll: number;
+  paymentsReceived: number;
   recurrence: string;
   startDate: string;
   endDate: string | null;
@@ -137,4 +139,5 @@ export interface ProfitRow {
   costs: number;
   netProfit: number;
   margin: number;
+  accountsReceivable?: number;
 }

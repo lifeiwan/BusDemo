@@ -124,10 +124,7 @@ function groupProfit(jobs: Job[], range: DateRange, data: DataSnapshot) {
   const uniqueVehicleIds = [...new Set(jobs.map(j => j.vehicleId))];
   const vehicleCosts = uniqueVehicleIds.reduce((s, vId) => s + totalVehicleCosts(vId, range, data), 0);
 
-  const uniqueDriverIds = [...new Set(
-    jobs.map(j => j.driverId).filter((id): id is number => id != null)
-  )];
-  const driverCosts = uniqueDriverIds.reduce((s, dId) => s + driverCostForDriver(dId, range, data), 0);
+  const driverCosts = jobs.reduce((s, j) => s + j.driverPayroll, 0);
 
   const costs = lineCosts + vehicleCosts + driverCosts;
   return { revenue, costs, netProfit: revenue - costs };
@@ -188,7 +185,8 @@ export function profitByCustomer(range: DateRange, data: DataSnapshot): ProfitRo
     .map(c => {
       const cJobs = activeJobs(range, data).filter(j => j.customerId === c.id);
       const { revenue, costs, netProfit } = groupProfit(cJobs, range, data);
-      return { id: c.id, label: c.name, revenue, costs, netProfit, margin: revenue > 0 ? (netProfit / revenue) * 100 : 0 };
+      const accountsReceivable = cJobs.reduce((s, j) => s + (j.revenue - j.paymentsReceived), 0);
+      return { id: c.id, label: c.name, revenue, costs, netProfit, margin: revenue > 0 ? (netProfit / revenue) * 100 : 0, accountsReceivable };
     })
     .filter(r => r.revenue > 0 || r.costs > 0)
     .sort((a, b) => b.netProfit - a.netProfit);
@@ -204,7 +202,7 @@ export function profitByDriver(range: DateRange, data: DataSnapshot): ProfitRow[
           .reduce((a, li) => a + li.amount, 0);
         return s + j.revenue + lineIncome;
       }, 0);
-      const costs = driverCostForDriver(d.id, range, data);
+      const costs = dJobs.reduce((s, j) => s + j.driverPayroll, 0);
       const netProfit = revenue - costs;
       return { id: d.id, label: d.name, revenue, costs, netProfit, margin: revenue > 0 ? (netProfit / revenue) * 100 : 0 };
     })
