@@ -87,11 +87,6 @@ function parkingCostForVehicle(vehicleId: number, range: DateRange, data: DataSn
     }, 0);
 }
 
-function driverCostForDriver(driverId: number, range: DateRange, data: DataSnapshot): number {
-  return data.driverCosts
-    .filter(c => c.driverId === driverId && inRange(c.date, range))
-    .reduce((s, c) => s + c.amount, 0);
-}
 
 function totalVehicleCosts(vehicleId: number, range: DateRange, data: DataSnapshot): number {
   return (
