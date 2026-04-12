@@ -146,6 +146,8 @@ export interface ProfitRow {
   label: string;
   revenue: number;
   costs: number;
+  cogs?: number;
+  ga?: number;
   netProfit: number;
   margin: number;
   accountsReceivable?: number;

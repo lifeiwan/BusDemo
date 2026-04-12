@@ -8,11 +8,12 @@ function fmt$(n: number) {
 interface Props {
   rows: ProfitRow[];
   showAR?: boolean;
+  showCostSplit?: boolean;
 }
 
-export default function ProfitTable({ rows, showAR }: Props) {
+export default function ProfitTable({ rows, showAR, showCostSplit }: Props) {
   const { t } = useTranslation();
-  const colSpan = showAR ? 7 : 6;
+  const colSpan = 5 + (showAR ? 1 : 0) + (showCostSplit ? 1 : 0);
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
@@ -22,7 +23,14 @@ export default function ProfitTable({ rows, showAR }: Props) {
             <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">{t('profitTable.name')}</th>
             <th className="text-right px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">{t('profitTable.revenue')}</th>
             {showAR && <th className="text-right px-4 py-3 text-xs font-semibold text-amber-600 uppercase tracking-wide">{t('profitTable.accountsReceivable')}</th>}
-            <th className="text-right px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">{t('profitTable.costs')}</th>
+            {showCostSplit ? (
+              <>
+                <th className="text-right px-4 py-3 text-xs font-semibold text-orange-600 uppercase tracking-wide">{t('profitTable.cogs')}</th>
+                <th className="text-right px-4 py-3 text-xs font-semibold text-purple-600 uppercase tracking-wide">{t('profitTable.ga')}</th>
+              </>
+            ) : (
+              <th className="text-right px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">{t('profitTable.costs')}</th>
+            )}
             <th className="text-right px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">{t('profitTable.netProfit')}</th>
             <th className="text-right px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">{t('profitTable.margin')}</th>
           </tr>
@@ -40,7 +48,14 @@ export default function ProfitTable({ rows, showAR }: Props) {
                   </span>
                 </td>
               )}
-              <td className="px-4 py-3 text-right text-red-600">{fmt$(row.costs)}</td>
+              {showCostSplit ? (
+                <>
+                  <td className="px-4 py-3 text-right text-orange-600">{fmt$(row.cogs ?? 0)}</td>
+                  <td className="px-4 py-3 text-right text-purple-600">{fmt$(row.ga ?? 0)}</td>
+                </>
+              ) : (
+                <td className="px-4 py-3 text-right text-red-600">{fmt$(row.costs)}</td>
+              )}
               <td className={`px-4 py-3 text-right font-semibold ${row.netProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                 {row.netProfit < 0 ? '-' : ''}{fmt$(row.netProfit)}
               </td>

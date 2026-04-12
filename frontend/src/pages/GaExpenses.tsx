@@ -20,12 +20,89 @@ function fmt$(n: number) {
   return '$' + n.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 }
 
+const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
 export default function GaExpenses() {
   const { t } = useTranslation();
   const { gaEntries, addGaEntry, updateGaEntry, deleteGaEntry } = useData();
 
   const [modal, setModal] = useState<{ open: boolean; editing: GaEntry | null }>({ open: false, editing: null });
   const [form, setForm] = useState<FormState>(blankForm);
+
+  // Year selector
+  const currentYear = new Date().getFullYear();
+  const availableYears = useMemo(() => {
+    const years = new Set(gaEntries.map(e => Number(e.date.slice(0, 4))));
+    years.add(currentYear);
+    return [...years].sort((a, b) => b - a);
+  }, [gaEntries, currentYear]);
+
+  const [selectedYear, setSelectedYear] = useState(currentYear);
+  const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
+
+  function selectYear(y: number) {
+    setSelectedYear(y);
+    setSelectedMonth(null);
+  }
+
+  function toggleMonth(m: number) {
+    setSelectedMonth(prev => prev === m ? null : m);
+  }
+
+  const isCurrentYear = selectedYear === currentYear;
+  const today = new Date().toISOString().slice(0, 10);
+
+  // Entries for selected year
+  const yearEntries = useMemo(
+    () => gaEntries.filter(e => e.date.startsWith(String(selectedYear))),
+    [gaEntries, selectedYear]
+  );
+
+  // Monthly totals for selected year
+  const monthlyTotals = useMemo(() => {
+    return MONTH_NAMES.map((name, i) => {
+      const mm = String(i + 1).padStart(2, '0');
+      const prefix = `${selectedYear}-${mm}`;
+      const total = yearEntries
+        .filter(e => e.date.startsWith(prefix))
+        .reduce((s, e) => s + e.amount, 0);
+      const isFuture = isCurrentYear && `${prefix}-01` > today;
+      return { name, month: i + 1, total, isFuture, prefix };
+    });
+  }, [yearEntries, selectedYear, isCurrentYear, today]);
+
+  const maxMonthlyTotal = Math.max(...monthlyTotals.map(m => m.total), 1);
+  const yearTotal = monthlyTotals.reduce((s, m) => s + m.total, 0);
+
+  // Category totals — driven by selected month or YTD/full-year
+  const summaryEntries = useMemo(() => {
+    if (selectedMonth !== null) {
+      const mm = String(selectedMonth).padStart(2, '0');
+      return yearEntries.filter(e => e.date.startsWith(`${selectedYear}-${mm}`));
+    }
+    return isCurrentYear ? yearEntries.filter(e => e.date <= today) : yearEntries;
+  }, [yearEntries, selectedMonth, selectedYear, isCurrentYear, today]);
+
+  const byCategory = useMemo(() => {
+    const map: Record<string, number> = {};
+    for (const e of summaryEntries) {
+      map[e.category] = (map[e.category] ?? 0) + e.amount;
+    }
+    return Object.entries(map).sort((a, b) => b[1] - a[1]);
+  }, [summaryEntries]);
+
+  const summaryTotal = summaryEntries.reduce((s, e) => s + e.amount, 0);
+
+  // Entries table: filtered to selected month (or all year), sorted by date descending
+  const sorted = useMemo(() => {
+    const base = selectedMonth !== null
+      ? yearEntries.filter(e => {
+          const mm = String(selectedMonth).padStart(2, '0');
+          return e.date.startsWith(`${selectedYear}-${mm}`);
+        })
+      : yearEntries;
+    return [...base].sort((a, b) => b.date.localeCompare(a.date));
+  }, [yearEntries, selectedMonth, selectedYear]);
 
   function openAdd() {
     setForm(blankForm());
@@ -57,20 +134,6 @@ export default function GaExpenses() {
   const set = (field: keyof FormState) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     setForm(f => ({ ...f, [field]: e.target.value }));
   };
-
-  // Sort entries by date descending
-  const sorted = useMemo(() => [...gaEntries].sort((a, b) => b.date.localeCompare(a.date)), [gaEntries]);
-
-  // Summary by category
-  const byCategory = useMemo(() => {
-    const map: Record<string, number> = {};
-    for (const e of gaEntries) {
-      map[e.category] = (map[e.category] ?? 0) + e.amount;
-    }
-    return Object.entries(map).sort((a, b) => b[1] - a[1]);
-  }, [gaEntries]);
-
-  const grandTotal = gaEntries.reduce((s, e) => s + e.amount, 0);
 
   return (
     <div>
@@ -126,27 +189,125 @@ export default function GaExpenses() {
         </button>
       </div>
 
-      {/* Category summary */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 mb-4">
-        <h2 className="text-sm font-semibold text-slate-700 mb-3">{t('gaExpenses.summaryTitle')}</h2>
-        <div className="grid grid-cols-3 gap-3">
-          {byCategory.map(([cat, total]) => (
-            <div key={cat} className="flex items-center justify-between bg-slate-50 rounded-lg px-3 py-2">
-              <span className="text-sm text-slate-600 truncate">{cat}</span>
-              <span className="text-sm font-semibold text-slate-800 ml-2 shrink-0">{fmt$(total)}</span>
-            </div>
-          ))}
-        </div>
-        {byCategory.length > 0 && (
-          <div className="mt-3 pt-3 border-t border-slate-100 flex justify-between items-center">
-            <span className="text-sm font-semibold text-slate-600">{t('gaExpenses.total')}</span>
-            <span className="text-lg font-bold text-red-600">{fmt$(grandTotal)}</span>
+      {/* Year tabs */}
+      <div className="flex gap-1 mb-5">
+        {availableYears.map(y => (
+          <button
+            key={y}
+            onClick={() => selectYear(y)}
+            className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
+              selectedYear === y
+                ? 'bg-blue-500 text-white'
+                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+            }`}
+          >
+            {y}
+          </button>
+        ))}
+      </div>
+
+      {/* Two-column layout: YTD by Category + Monthly Totals */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+        {/* YTD / Full-year category summary */}
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+          <div className="flex items-baseline justify-between mb-3">
+            <h2 className="text-sm font-semibold text-slate-700">
+              {selectedMonth !== null
+                ? `${MONTH_NAMES[selectedMonth - 1]} ${selectedYear} — by Category`
+                : t('gaExpenses.summaryTitle')}
+            </h2>
+            {selectedMonth === null && (
+              <span className="text-xs text-slate-400">
+                {isCurrentYear ? t('gaExpenses.ytdNote') : t('gaExpenses.fullYear')}
+              </span>
+            )}
+            {selectedMonth !== null && (
+              <button
+                onClick={() => setSelectedMonth(null)}
+                className="text-xs text-blue-500 hover:underline"
+              >
+                ✕ clear
+              </button>
+            )}
           </div>
-        )}
+          <div className="space-y-2">
+            {byCategory.map(([cat, total]) => (
+              <div key={cat} className="flex items-center justify-between">
+                <span className="text-sm text-slate-600 truncate">{cat}</span>
+                <span className="text-sm font-semibold text-slate-800 ml-2 shrink-0">{fmt$(total)}</span>
+              </div>
+            ))}
+            {byCategory.length === 0 && (
+              <p className="text-sm text-slate-400">{t('common.noData')}</p>
+            )}
+          </div>
+          {byCategory.length > 0 && (
+            <div className="mt-3 pt-3 border-t border-slate-100 flex justify-between items-center">
+              <span className="text-sm font-semibold text-slate-600">{t('gaExpenses.total')}</span>
+              <span className="text-lg font-bold text-red-600">{fmt$(summaryTotal)}</span>
+            </div>
+          )}
+        </div>
+
+        {/* Monthly totals */}
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+          <div className="flex items-baseline justify-between mb-3">
+            <h2 className="text-sm font-semibold text-slate-700">{t('gaExpenses.monthlyTitle')}</h2>
+            <span className="text-xs text-slate-400 font-medium">{selectedYear}</span>
+          </div>
+          <div className="space-y-1">
+            {monthlyTotals.map(({ name, month, total, isFuture }) => {
+              const isSelected = selectedMonth === month;
+              return (
+                <button
+                  key={name}
+                  onClick={() => !isFuture && toggleMonth(month)}
+                  disabled={isFuture}
+                  className={`w-full flex items-center gap-3 px-2 py-1 rounded-lg transition-colors text-left ${
+                    isSelected
+                      ? 'bg-blue-50 ring-1 ring-blue-300'
+                      : isFuture
+                        ? 'cursor-default'
+                        : 'hover:bg-slate-50 cursor-pointer'
+                  }`}
+                >
+                  <span className={`text-xs font-medium w-8 shrink-0 ${
+                    isSelected ? 'text-blue-600' : isFuture ? 'text-slate-300' : 'text-slate-500'
+                  }`}>{name}</span>
+                  <div className="flex-1 bg-slate-100 rounded-full h-2 overflow-hidden">
+                    {total > 0 && (
+                      <div
+                        className={`h-2 rounded-full ${isSelected ? 'bg-blue-400' : 'bg-purple-400'}`}
+                        style={{ width: `${(total / maxMonthlyTotal) * 100}%` }}
+                      />
+                    )}
+                  </div>
+                  <span className={`text-xs font-semibold w-16 text-right shrink-0 ${
+                    isSelected ? 'text-blue-700' : isFuture ? 'text-slate-300' : total > 0 ? 'text-slate-800' : 'text-slate-300'
+                  }`}>
+                    {total > 0 ? fmt$(total) : '—'}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+          <div className="mt-3 pt-3 border-t border-slate-100 flex justify-between items-center">
+            <span className="text-sm font-semibold text-slate-600">{selectedYear} {t('gaExpenses.total')}</span>
+            <span className="text-lg font-bold text-red-600">{fmt$(yearTotal)}</span>
+          </div>
+        </div>
       </div>
 
       {/* Entries table */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="px-4 py-3 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
+          <span className="text-sm font-semibold text-slate-700">
+            {selectedMonth !== null
+              ? `${MONTH_NAMES[selectedMonth - 1]} ${selectedYear} Entries`
+              : `${selectedYear} Entries`}
+          </span>
+          <span className="text-xs text-slate-400">{sorted.length} records</span>
+        </div>
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-slate-50 border-b border-slate-200">

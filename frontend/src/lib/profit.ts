@@ -231,7 +231,7 @@ export function profitByMonthRange(range: DateRange, data: DataSnapshot): Profit
     const ga = gaCostForRange(monthRange, data);
     const costs = jobCosts + ga;
     const netProfit = jobNetProfitVal - ga;
-    result.push({ id: label, label, revenue, costs, netProfit, margin: revenue > 0 ? (netProfit / revenue) * 100 : 0 });
+    result.push({ id: label, label, revenue, costs, cogs: jobCosts, ga, netProfit, margin: revenue > 0 ? (netProfit / revenue) * 100 : 0 });
     cursor = new Date(y, m - 1, 1);
   }
   return result; // newest first
