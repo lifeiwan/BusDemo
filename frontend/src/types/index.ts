@@ -133,6 +133,15 @@ export interface DriverCost {
   notes: string;
 }
 
+export interface VehicleFixedCost {
+  id: number;
+  vehicleId: number;
+  type: 'loan' | 'eld' | 'management_fee';
+  cost: number;
+  startDate: string;
+  notes: string;
+}
+
 export interface GaEntry {
   id: number;
   category: string;

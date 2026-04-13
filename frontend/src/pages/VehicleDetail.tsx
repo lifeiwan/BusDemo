@@ -5,7 +5,7 @@ import { currentMonthRange } from '../lib/profit';
 import EntityDetail from '../components/EntityDetail';
 import Badge from '../components/Badge';
 import Modal from '../components/Modal';
-import type { MaintenanceEntry, FuelEntry, Inspection } from '../types';
+import type { MaintenanceEntry, FuelEntry, Inspection, VehicleFixedCost } from '../types';
 
 function fmt$(n: number) {
   return '$' + n.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
@@ -14,6 +14,20 @@ function fmt$(n: number) {
 type MaintForm = Omit<MaintenanceEntry, 'id' | 'vehicleId'>;
 type FuelForm = Omit<FuelEntry, 'id' | 'vehicleId'>;
 type InspForm = Omit<Inspection, 'id' | 'vehicleId'>;
+type FixedCostForm = Omit<VehicleFixedCost, 'id' | 'vehicleId'>;
+
+const FIXED_COST_LABELS: Record<VehicleFixedCost['type'], string> = {
+  loan: 'Loan',
+  eld: 'ELD',
+  management_fee: 'Management Fee',
+};
+
+const blankFixedCost = (): FixedCostForm => ({
+  type: 'loan',
+  cost: 0,
+  startDate: new Date().toISOString().slice(0, 10),
+  notes: '',
+});
 
 const blankMaint = (today: string): MaintForm => ({ date: today, type: '', mileage: 0, cost: 0, tech: '', notes: '' });
 const blankFuel = (today: string): FuelForm => ({ date: today, gallons: 0, cpg: 0, total: 0, odometer: 0, full: true });
@@ -22,10 +36,11 @@ const blankInsp = (today: string): InspForm => ({ date: today, driverName: '', r
 export default function VehicleDetail() {
   const { id } = useParams();
   const data = useData();
-  const { vehicles, maintenanceEntries, fuelEntries, inspections,
+  const { vehicles, maintenanceEntries, fuelEntries, inspections, vehicleFixedCosts,
     addMaintenance, updateMaintenance, deleteMaintenance,
     addFuel, updateFuel, deleteFuel,
-    addInspection, updateInspection, deleteInspection } = data;
+    addInspection, updateInspection, deleteInspection,
+    addVehicleFixedCost, updateVehicleFixedCost, deleteVehicleFixedCost } = data;
 
   const vehicle = vehicles.find(v => v.id === Number(id));
   const [tab, setTab] = useState('fuel');
@@ -44,7 +59,16 @@ export default function VehicleDetail() {
   const [inspModal, setInspModal] = useState<{ open: boolean; editing: Inspection | null }>({ open: false, editing: null });
   const [inspForm, setInspForm] = useState<InspForm>(blankInsp(today));
 
+  // Fixed Costs modal state
+  const [fixedModal, setFixedModal] = useState<{ open: boolean; editing: VehicleFixedCost | null }>({ open: false, editing: null });
+  const [fixedForm, setFixedForm] = useState<FixedCostForm>(blankFixedCost());
+
   if (!vehicle) return <Navigate to="/master/vehicles" replace />;
+
+  const fixedCosts = vehicleFixedCosts
+    .filter(c => c.vehicleId === vehicle.id)
+    .sort((a, b) => a.type.localeCompare(b.type));
+  const fixedCostMonthly = fixedCosts.reduce((s, c) => s + c.cost, 0);
 
   const maint = maintenanceEntries
     .filter(e => e.vehicleId === vehicle.id)
@@ -113,12 +137,30 @@ export default function VehicleDetail() {
     if (window.confirm(`Delete inspection record from ${e.date}?`)) deleteInspection(e.id);
   }
 
+  // Fixed Cost CRUD
+  function openAddFixed() { setFixedForm(blankFixedCost()); setFixedModal({ open: true, editing: null }); }
+  function openEditFixed(c: VehicleFixedCost) {
+    setFixedForm({ type: c.type, cost: c.cost, startDate: c.startDate, notes: c.notes });
+    setFixedModal({ open: true, editing: c });
+  }
+  function saveFixed() {
+    const payload = { ...fixedForm, vehicleId: vehicle.id, cost: Number(fixedForm.cost) };
+    if (fixedModal.editing) updateVehicleFixedCost({ ...fixedModal.editing, ...payload });
+    else addVehicleFixedCost(payload);
+    setFixedModal({ open: false, editing: null });
+  }
+  function delFixed(c: VehicleFixedCost) {
+    if (window.confirm(`Delete ${FIXED_COST_LABELS[c.type]} entry?`)) deleteVehicleFixedCost(c.id);
+  }
+
   const setM = (field: keyof MaintForm) => (ev: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
     setMaintForm(f => ({ ...f, [field]: ev.target.value }));
   const setF = (field: keyof FuelForm) => (ev: React.ChangeEvent<HTMLInputElement>) =>
     setFuelForm(f => ({ ...f, [field]: field === 'full' ? (ev.target as HTMLInputElement).checked : ev.target.value }));
   const setI = (field: keyof InspForm) => (ev: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
     setInspForm(f => ({ ...f, [field]: field === 'pass' ? ev.target.value === 'true' : ev.target.value }));
+  const setFx = (field: keyof FixedCostForm) => (ev: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
+    setFixedForm(f => ({ ...f, [field]: ev.target.value }));
 
   return (
     <EntityDetail
@@ -128,6 +170,7 @@ export default function VehicleDetail() {
         { label: 'Fuel', key: 'fuel' },
         { label: 'Maintenance', key: 'maintenance' },
         { label: 'Inspections', key: 'inspections' },
+        { label: 'Fixed Costs', key: 'fixed' },
       ]}
       activeTab={tab}
       onTabChange={setTab}
@@ -140,6 +183,10 @@ export default function VehicleDetail() {
         <div className="bg-white rounded-xl border border-slate-200 p-4 flex-1 shadow-sm">
           <p className="text-xs text-slate-500 uppercase tracking-wide mb-1">Fuel (MTD)</p>
           <p className="text-2xl font-bold text-slate-800">{fmt$(fuelCostMTD)}</p>
+        </div>
+        <div className="bg-white rounded-xl border border-slate-200 p-4 flex-1 shadow-sm">
+          <p className="text-xs text-slate-500 uppercase tracking-wide mb-1">Fixed Costs (monthly)</p>
+          <p className="text-2xl font-bold text-slate-800">{fmt$(fixedCostMonthly)}</p>
         </div>
         <div className="bg-white rounded-xl border border-slate-200 p-4 flex-1 shadow-sm">
           <p className="text-xs text-slate-500 uppercase tracking-wide mb-1">Status</p>
@@ -265,6 +312,53 @@ export default function VehicleDetail() {
                     </td>
                   </tr>
                 ))}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
+
+      {tab === 'fixed' && (
+        <>
+          <div className="flex justify-end mb-3">
+            <button onClick={openAddFixed} className="px-3 py-1.5 bg-blue-500 text-white text-sm font-medium rounded-lg hover:bg-blue-600 transition-colors">
+              + Add Entry
+            </button>
+          </div>
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-slate-50 border-b border-slate-200">
+                  {['Type', 'Monthly Cost', 'Start Date', 'Notes', ''].map(h => (
+                    <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {fixedCosts.length === 0 && (
+                  <tr><td colSpan={5} className="px-4 py-8 text-center text-slate-400">No fixed costs</td></tr>
+                )}
+                {fixedCosts.map(c => (
+                  <tr key={c.id} className="border-b border-slate-100 hover:bg-slate-50">
+                    <td className="px-4 py-3 font-medium text-slate-800">{FIXED_COST_LABELS[c.type]}</td>
+                    <td className="px-4 py-3 font-semibold text-red-600">{fmt$(c.cost)}/mo</td>
+                    <td className="px-4 py-3 text-slate-600">{c.startDate}</td>
+                    <td className="px-4 py-3 text-slate-500">{c.notes || '—'}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex gap-1">
+                        <button onClick={() => openEditFixed(c)} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors" title="Edit">✎</button>
+                        <button onClick={() => delFixed(c)} className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors" title="Delete">✕</button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+                {fixedCosts.length > 0 && (
+                  <tr className="bg-slate-50 border-t border-slate-200">
+                    <td className="px-4 py-2 text-xs font-semibold text-slate-500 uppercase">Total</td>
+                    <td className="px-4 py-2 font-bold text-red-600">{fmt$(fixedCostMonthly)}/mo</td>
+                    <td colSpan={3} />
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
@@ -406,6 +500,47 @@ export default function VehicleDetail() {
                 {inspModal.editing ? 'Save Changes' : 'Add Entry'}
               </button>
               <button onClick={() => setInspModal({ open: false, editing: null })} className="flex-1 border border-slate-300 text-slate-600 py-2 rounded-lg text-sm font-medium hover:bg-slate-50 transition-colors">
+                Cancel
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
+      {/* Fixed Cost Modal */}
+      {fixedModal.open && (
+        <Modal title={fixedModal.editing ? 'Edit Fixed Cost' : 'Add Fixed Cost'} onClose={() => setFixedModal({ open: false, editing: null })}>
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Type</label>
+                <select value={fixedForm.type} onChange={setFx('type')}
+                  className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  <option value="loan">Loan</option>
+                  <option value="eld">ELD</option>
+                  <option value="management_fee">Management Fee</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Monthly Cost ($)</label>
+                <input type="number" value={fixedForm.cost} onChange={setFx('cost')} min={0} step="0.01"
+                  className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Start Date</label>
+              <input type="date" value={fixedForm.startDate} onChange={setFx('startDate')}
+                className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Notes</label>
+              <input value={fixedForm.notes} onChange={setFx('notes')} placeholder="Optional"
+                className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            </div>
+            <div className="flex gap-2 pt-2">
+              <button onClick={saveFixed} className="flex-1 bg-blue-500 text-white py-2 rounded-lg text-sm font-medium hover:bg-blue-600 transition-colors">
+                {fixedModal.editing ? 'Save Changes' : 'Add Entry'}
+              </button>
+              <button onClick={() => setFixedModal({ open: false, editing: null })} className="flex-1 border border-slate-300 text-slate-600 py-2 rounded-lg text-sm font-medium hover:bg-slate-50 transition-colors">
                 Cancel
               </button>
             </div>

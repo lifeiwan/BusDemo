@@ -2,7 +2,7 @@ import { createContext, useContext, useState } from 'react';
 import type { ReactNode } from 'react';
 import type {
   Vehicle, Driver, Customer, JobGroup, Job, JobLineItem,
-  MaintenanceEntry, FuelEntry, Inspection, GaEntry,
+  MaintenanceEntry, FuelEntry, Inspection, GaEntry, VehicleFixedCost,
 } from '../types';
 import {
   vehicles as initVehicles,
@@ -19,6 +19,7 @@ import {
   driverCosts as initDriverCosts,
   driverVehicleAssignments as initAssignments,
   gaEntries as initGaEntries,
+  vehicleFixedCosts as initVehicleFixedCosts,
 } from '../data';
 import type { DataSnapshot } from '../lib/profit';
 
@@ -68,6 +69,10 @@ interface DataContextValue extends DataSnapshot {
   addGaEntry: (e: Omit<GaEntry, 'id'>) => void;
   updateGaEntry: (e: GaEntry) => void;
   deleteGaEntry: (id: number) => void;
+  // Vehicle Fixed Costs
+  addVehicleFixedCost: (e: Omit<VehicleFixedCost, 'id'>) => void;
+  updateVehicleFixedCost: (e: VehicleFixedCost) => void;
+  deleteVehicleFixedCost: (id: number) => void;
 }
 
 const DataContext = createContext<DataContextValue | null>(null);
@@ -83,6 +88,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [fuelEntries, setFuel] = useState(initFuel);
   const [inspections, setInspections] = useState(initInspections);
   const [gaEntries, setGaEntries] = useState(initGaEntries);
+  const [vehicleFixedCosts, setVehicleFixedCosts] = useState(initVehicleFixedCosts);
 
   // These are not editable in the UI — kept as-is
   const insurancePolicies = initInsurance;
@@ -94,7 +100,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     // snapshot fields
     vehicles, drivers, customers, jobGroups, jobs,
     jobLineItems, maintenanceEntries, fuelEntries, inspections,
-    insurancePolicies, parkingEntries, driverCosts, gaEntries,
+    insurancePolicies, parkingEntries, driverCosts, gaEntries, vehicleFixedCosts,
     // DataContext extras (used by Drivers page)
     // @ts-ignore — extend snapshot with non-profit fields
     driverVehicleAssignments,
@@ -149,6 +155,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
     addGaEntry: e => setGaEntries(prev => [...prev, { ...e, id: nextId(prev) }]),
     updateGaEntry: e => setGaEntries(prev => prev.map(x => x.id === e.id ? e : x)),
     deleteGaEntry: id => setGaEntries(prev => prev.filter(x => x.id !== id)),
+
+    // Vehicle Fixed Costs
+    addVehicleFixedCost: e => setVehicleFixedCosts(prev => [...prev, { ...e, id: nextId(prev) }]),
+    updateVehicleFixedCost: e => setVehicleFixedCosts(prev => prev.map(x => x.id === e.id ? e : x)),
+    deleteVehicleFixedCost: id => setVehicleFixedCosts(prev => prev.filter(x => x.id !== id)),
   };
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>;

@@ -1,9 +1,7 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { profitByJobGroup, currentMonthRange } from '../lib/profit';
 import { useData } from '../context/DataContext';
-import ProfitTable from '../components/ProfitTable';
 import Badge from '../components/Badge';
 import Modal from '../components/Modal';
 import type { JobGroup } from '../types';
@@ -15,8 +13,6 @@ export default function JobGroups() {
   const { t } = useTranslation();
   const data = useData();
   const { jobGroups, jobs, addJobGroup, updateJobGroup, deleteJobGroup } = data;
-  const range = useMemo(currentMonthRange, []);
-  const rows = useMemo(() => profitByJobGroup(range, data), [range, data]);
 
   const [modal, setModal] = useState<{ open: boolean; editing: JobGroup | null }>({ open: false, editing: null });
   const [form, setForm] = useState<FormState>(blank);
@@ -99,13 +95,6 @@ export default function JobGroups() {
             </div>
           );
         })}
-      </div>
-
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
-        <div className="px-5 py-4 border-b border-slate-100">
-          <h2 className="font-semibold text-slate-700">{t('profitability.title')} — {t('jobGroups.title')}</h2>
-        </div>
-        <ProfitTable rows={rows} />
       </div>
 
       {modal.open && (

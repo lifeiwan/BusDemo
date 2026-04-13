@@ -12,3 +12,4 @@ export * from './insurancePolicies';
 export * from './parkingEntries';
 export * from './driverCosts';
 export * from './gaEntries';
+export * from './vehicleFixedCosts';

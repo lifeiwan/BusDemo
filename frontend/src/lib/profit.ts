@@ -13,6 +13,7 @@ import type {
   ParkingEntry,
   DriverCost,
   GaEntry,
+  VehicleFixedCost,
 } from '../types';
 
 export interface DataSnapshot {
@@ -29,6 +30,7 @@ export interface DataSnapshot {
   parkingEntries: ParkingEntry[];
   driverCosts: DriverCost[];
   gaEntries: GaEntry[];
+  vehicleFixedCosts: VehicleFixedCost[];
 }
 
 export interface DateRange {
@@ -78,6 +80,13 @@ function fuelCostForVehicle(vehicleId: number, range: DateRange, data: DataSnaps
     .reduce((s, e) => s + e.total, 0);
 }
 
+function fixedCostForVehicle(vehicleId: number, range: DateRange, data: DataSnapshot): number {
+  const months = monthsInRange(range);
+  return data.vehicleFixedCosts
+    .filter(c => c.vehicleId === vehicleId)
+    .reduce((sum, c) => sum + c.cost * months, 0);
+}
+
 function parkingCostForVehicle(vehicleId: number, range: DateRange, data: DataSnapshot): number {
   const months = monthsInRange(range);
   return data.parkingEntries
@@ -101,7 +110,8 @@ function totalVehicleCosts(vehicleId: number, range: DateRange, data: DataSnapsh
     maintenanceCostForVehicle(vehicleId, range, data) +
     fuelCostForVehicle(vehicleId, range, data) +
     insuranceCostForVehicle(vehicleId, range, data) +
-    parkingCostForVehicle(vehicleId, range, data)
+    parkingCostForVehicle(vehicleId, range, data) +
+    fixedCostForVehicle(vehicleId, range, data)
   );
 }
 

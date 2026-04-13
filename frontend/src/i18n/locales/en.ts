@@ -12,6 +12,7 @@ export default {
     dashboard: 'Dashboard',
     profitCenter: 'Profit Center',
     masterData: 'Master Data',
+    reports: 'Reports',
   },
   sidebar: {
     jobGroups: 'Job Groups',
@@ -21,6 +22,8 @@ export default {
     customers: 'Customers',
     drivers: 'Drivers',
     gaExpenses: 'G&A Expenses',
+    plReport: 'P&L Report',
+    vehicleReport: 'Vehicle Report',
     maintenance: 'Maintenance',
     fuel: 'Fuel',
     inspections: 'Inspections',

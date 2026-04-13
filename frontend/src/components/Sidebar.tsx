@@ -24,20 +24,28 @@ export default function Sidebar() {
     t('sidebar.inspections'),
   ];
 
+  const reportItems = [
+    { label: t('sidebar.plReport'),      path: '/reports/pl'      },
+    { label: t('sidebar.vehicleReport'), path: '/reports/vehicle' },
+  ];
+
   const inProfit = pathname.startsWith('/profit');
   const inMaster = pathname.startsWith('/master');
+  const inReports = pathname.startsWith('/reports');
 
-  if (!inProfit && !inMaster) return null;
+  if (!inProfit && !inMaster && !inReports) return null;
 
-  const items = inProfit ? profitItems : masterItems;
+  const items = inProfit ? profitItems : inMaster ? masterItems : reportItems;
   const inVehicles = pathname.startsWith('/master/vehicles');
+  const inReportsSection = pathname.startsWith('/reports');
 
   return (
     <aside className="w-52 bg-slate-800 text-slate-300 flex-shrink-0 overflow-y-auto py-4">
       {items.map(item => {
         const active = pathname === item.path ||
           (item.path !== '/master/vehicles' && pathname.startsWith(item.path + '/')) ||
-          (item.path === '/master/vehicles' && pathname.startsWith('/master/vehicles'));
+          (item.path === '/master/vehicles' && pathname.startsWith('/master/vehicles')) ||
+          (inReportsSection && pathname.startsWith(item.path));
         return (
           <div key={item.path}>
             <Link

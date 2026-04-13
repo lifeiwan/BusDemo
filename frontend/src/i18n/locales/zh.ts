@@ -12,6 +12,7 @@ export default {
     dashboard: '仪表盘',
     profitCenter: '利润中心',
     masterData: '主数据',
+    reports: '报表',
   },
   sidebar: {
     jobGroups: '任务组',
@@ -21,6 +22,8 @@ export default {
     customers: '客户',
     drivers: '司机',
     gaExpenses: '管理费用',
+    plReport: '损益报表',
+    vehicleReport: '车辆报表',
     maintenance: '维修保养',
     fuel: '燃油',
     inspections: '检查',

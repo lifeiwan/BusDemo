@@ -18,6 +18,7 @@ export default function TopNav() {
     { label: t('nav.dashboard'),    path: '/',                    prefix: '' },
     { label: t('nav.profitCenter'), path: '/profit/job-groups',   prefix: '/profit' },
     { label: t('nav.masterData'),   path: '/master/vehicles',     prefix: '/master' },
+    { label: t('nav.reports'),      path: '/reports/pl',          prefix: '/reports' },
   ];
 
   function isActive(prefix: string) {

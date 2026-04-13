@@ -20,7 +20,7 @@ type DraftLineItem = Omit<JobLineItem, 'id' | 'jobId'> & { _key: number };
 let _keyCounter = 0;
 function draftKey() { return ++_keyCounter; }
 
-const PRESET_CATEGORIES = ['Toll', 'Parking', 'Reimbursement', 'Other'];
+const PRESET_CATEGORIES = ['EZ-Pass', 'Toll', 'Parking', 'Reimbursement', 'Other'];
 
 type FuelDraft = { enabled: boolean; gallons: string; cpg: string; odometer: string };
 const blankFuelDraft = (): FuelDraft => ({ enabled: false, gallons: '', cpg: '', odometer: '' });

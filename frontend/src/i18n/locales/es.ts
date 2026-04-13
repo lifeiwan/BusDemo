@@ -12,6 +12,7 @@ export default {
     dashboard: 'Panel',
     profitCenter: 'Centro de Ganancias',
     masterData: 'Datos Maestros',
+    reports: 'Informes',
   },
   sidebar: {
     jobGroups: 'Grupos de Trabajo',
@@ -21,6 +22,8 @@ export default {
     customers: 'Clientes',
     drivers: 'Conductores',
     gaExpenses: 'Gastos G&A',
+    plReport: 'Informe P&G',
+    vehicleReport: 'Informe de Vehículos',
     maintenance: 'Mantenimiento',
     fuel: 'Combustible',
     inspections: 'Inspecciones',
