@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useData } from '../context/DataContext';
-import { buildVehicleMonthReport, buildVehicleYTDReport } from '../lib/report';
-import type { VehicleMonthRow } from '../lib/report';
+import { buildJobGroupMonthReport, buildJobGroupYTDReport } from '../lib/report';
+import type { JobGroupMonthRow } from '../lib/report';
 
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const MONTH_SHORT = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
@@ -9,7 +9,7 @@ const MONTH_SHORT = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SE
 // sentinel: 12 = YTD
 const YTD = 12;
 
-type ColKey = keyof Omit<VehicleMonthRow, 'vehicleId' | 'label'>;
+type ColKey = keyof Omit<JobGroupMonthRow, 'jobGroupId' | 'label'>;
 
 const COLS: { key: ColKey; label: string }[] = [
   { key: 'revenue',       label: 'Revenue' },
@@ -32,9 +32,9 @@ function fmt(n: number): string {
   return n < 0 ? `(${abs})` : abs;
 }
 
-function sumRows(rows: VehicleMonthRow[]): VehicleMonthRow {
-  const acc: VehicleMonthRow = {
-    vehicleId: 0, label: 'Fleet Total',
+function sumRows(rows: JobGroupMonthRow[]): JobGroupMonthRow {
+  const acc: JobGroupMonthRow = {
+    jobGroupId: 0, label: 'Total',
     revenue: 0, payroll: 0, fuel: 0, repair: 0, others: 0,
     ezPass: 0, insurance: 0, managementFee: 0, loan: 0, parking: 0, eld: 0, net: 0,
   };
@@ -52,15 +52,15 @@ function downloadCsv(content: string, filename: string) {
   URL.revokeObjectURL(url);
 }
 
-function buildCsv(label: string, rows: VehicleMonthRow[], total: VehicleMonthRow): string {
-  const header = ['Vehicle', ...COLS.map(c => c.label)].join(',');
+function buildCsv(label: string, rows: JobGroupMonthRow[], total: JobGroupMonthRow): string {
+  const header = ['Job Group', ...COLS.map(c => c.label)].join(',');
   const dataRows = [...rows, total].map(r =>
     [r.label, ...COLS.map(c => r[c.key].toFixed(0))].join(',')
   );
-  return [`Vehicle Report — ${label}`, '', header, ...dataRows].join('\n');
+  return [`Job Group Report — ${label}`, '', header, ...dataRows].join('\n');
 }
 
-export default function VehicleReport() {
+export default function JobGroupReport() {
   const data = useData();
 
   const today = new Date();
@@ -86,12 +86,11 @@ export default function VehicleReport() {
     }
   }
 
-  // YTD month count: for current year = months up to today, for past years = full 12
   const ytdMonthCount = isCurrentYear ? currentMonth + 1 : 12;
 
   const rows = useMemo(() => {
-    if (selectedMonth === YTD) return buildVehicleYTDReport(selectedYear, ytdMonthCount, data);
-    return buildVehicleMonthReport(selectedYear, selectedMonth, data);
+    if (selectedMonth === YTD) return buildJobGroupYTDReport(selectedYear, ytdMonthCount, data);
+    return buildJobGroupMonthReport(selectedYear, selectedMonth, data);
   }, [selectedYear, selectedMonth, ytdMonthCount, data]);
 
   const total = useMemo(() => sumRows(rows), [rows]);
@@ -100,7 +99,7 @@ export default function VehicleReport() {
     return data.gaEntries
       .filter(e => {
         const year = Number(e.date.slice(0, 4));
-        const month = Number(e.date.slice(5, 7)) - 1; // 0-indexed
+        const month = Number(e.date.slice(5, 7)) - 1;
         if (year !== selectedYear) return false;
         if (selectedMonth === YTD) return month < ytdMonthCount;
         return month === selectedMonth;
@@ -116,7 +115,7 @@ export default function VehicleReport() {
 
   function handleExport() {
     const fileTag = selectedMonth === YTD ? 'YTD' : MONTH_SHORT[selectedMonth];
-    downloadCsv(buildCsv(periodLabel, rows, total), `Vehicle_Report_${selectedYear}_${fileTag}.csv`);
+    downloadCsv(buildCsv(periodLabel, rows, total), `JobGroup_Report_${selectedYear}_${fileTag}.csv`);
   }
 
   function isDisabled(m: number) {
@@ -138,8 +137,8 @@ export default function VehicleReport() {
       {/* Header */}
       <div className="flex items-start justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">Vehicle Monthly Report</h1>
-          <p className="text-sm text-slate-500 mt-1">Per-bus revenue and cost breakdown</p>
+          <h1 className="text-2xl font-bold text-slate-800">Job Group Monthly Report</h1>
+          <p className="text-sm text-slate-500 mt-1">Revenue and cost breakdown by job group</p>
         </div>
         <button
           onClick={handleExport}
@@ -174,27 +173,26 @@ export default function VehicleReport() {
               {name}
             </button>
           ))}
-          {/* YTD tab after Dec */}
           <button onClick={() => setSelectedMonth(YTD)} className={tabCls(YTD)}>
             YTD
           </button>
         </div>
       </div>
 
-      {/* Vehicle table */}
+      {/* Table */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
         <div className="px-4 py-3 bg-slate-800 flex items-center justify-between">
-          <span className="text-sm font-bold text-white">{periodLabel} — Per Vehicle</span>
+          <span className="text-sm font-bold text-white">{periodLabel} — Per Job Group</span>
           <span className="text-xs text-slate-400">
-            {rows.filter(r => r.revenue > 0).length} of {rows.length} vehicles active
+            {rows.filter(r => r.revenue > 0).length} of {rows.length} groups active
           </span>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm border-collapse">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-200">
-                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide sticky left-0 bg-slate-50 z-10 min-w-[220px]">
-                  Vehicle
+                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide sticky left-0 bg-slate-50 z-10 min-w-[200px]">
+                  Job Group
                 </th>
                 {COLS.map(col => (
                   <th key={col.key}
@@ -212,7 +210,7 @@ export default function VehicleReport() {
             </thead>
             <tbody>
               {rows.map(row => (
-                <tr key={row.vehicleId} className="border-b border-slate-100 hover:bg-slate-50">
+                <tr key={row.jobGroupId} className="border-b border-slate-100 hover:bg-slate-50">
                   <td className="px-4 py-2.5 font-medium text-slate-800 sticky left-0 bg-white z-10 text-sm">
                     {row.label}
                   </td>
@@ -235,10 +233,10 @@ export default function VehicleReport() {
                 </tr>
               ))}
 
-              {/* Fleet total */}
+              {/* Total */}
               <tr className="border-t-2 border-slate-300 bg-slate-100">
                 <td className="px-4 py-2.5 text-sm font-bold text-slate-700 sticky left-0 bg-slate-100 z-10">
-                  Fleet Total
+                  Total
                 </td>
                 {COLS.map(col => {
                   const v = total[col.key];

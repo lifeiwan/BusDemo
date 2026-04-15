@@ -10,6 +10,7 @@ export default {
   },
   nav: {
     dashboard: 'Panel',
+    operations: 'Operaciones',
     profitCenter: 'Centro de Ganancias',
     masterData: 'Datos Maestros',
     reports: 'Informes',
@@ -24,6 +25,7 @@ export default {
     gaExpenses: 'Gastos G&A',
     plReport: 'Informe P&G',
     vehicleReport: 'Informe de Vehículos',
+    jobGroupReport: 'Informe de Grupos',
     maintenance: 'Mantenimiento',
     fuel: 'Combustible',
     inspections: 'Inspecciones',

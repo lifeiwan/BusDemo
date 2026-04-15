@@ -10,6 +10,7 @@ export default {
   },
   nav: {
     dashboard: 'Dashboard',
+    operations: 'Operations',
     profitCenter: 'Profit Center',
     masterData: 'Master Data',
     reports: 'Reports',
@@ -24,6 +25,7 @@ export default {
     gaExpenses: 'G&A Expenses',
     plReport: 'P&L Report',
     vehicleReport: 'Vehicle Report',
+    jobGroupReport: 'Job Group Report',
     maintenance: 'Maintenance',
     fuel: 'Fuel',
     inspections: 'Inspections',

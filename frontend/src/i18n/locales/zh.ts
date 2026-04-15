@@ -10,6 +10,7 @@ export default {
   },
   nav: {
     dashboard: '仪表盘',
+    operations: '运营',
     profitCenter: '利润中心',
     masterData: '主数据',
     reports: '报表',
@@ -24,6 +25,7 @@ export default {
     gaExpenses: '管理费用',
     plReport: '损益报表',
     vehicleReport: '车辆报表',
+    jobGroupReport: '任务组报表',
     maintenance: '维修保养',
     fuel: '燃油',
     inspections: '检查',

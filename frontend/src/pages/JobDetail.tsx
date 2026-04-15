@@ -16,7 +16,7 @@ export default function JobDetail() {
   const { t } = useTranslation();
   const job = jobs.find(j => j.id === Number(id));
   const [editing, setEditing] = useState(false);
-  if (!job) return <Navigate to="/profit/jobs" replace />;
+  if (!job) return <Navigate to="/ops/jobs" replace />;
 
   const jobGroup = jobGroups.find(jg => jg.id === job.jobGroupId);
   const vehicle = vehicles.find(v => v.id === job.vehicleId);
@@ -38,11 +38,11 @@ export default function JobDetail() {
       {/* Header */}
       <div className="mb-6">
         <div className="flex items-center gap-2 text-sm text-slate-500 mb-2">
-          <Link to="/profit/job-groups" className="hover:text-blue-600">{t('jobDetail.breadcrumbGroups')}</Link>
+          <Link to="/ops/job-groups" className="hover:text-blue-600">{t('jobDetail.breadcrumbGroups')}</Link>
           <span>/</span>
           {jobGroup && (
             <>
-              <Link to="/profit/job-groups" className="hover:text-blue-600">{jobGroup.name}</Link>
+              <Link to="/ops/job-groups" className="hover:text-blue-600">{jobGroup.name}</Link>
               <span>/</span>
             </>
           )}

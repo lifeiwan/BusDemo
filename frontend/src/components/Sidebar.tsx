@@ -5,17 +5,20 @@ export default function Sidebar() {
   const { pathname } = useLocation();
   const { t } = useTranslation();
 
+  const opsItems = [
+    { label: t('sidebar.jobGroups'), path: '/ops/job-groups' },
+    { label: t('sidebar.jobs'),      path: '/ops/jobs'       },
+  ];
+
   const profitItems = [
-    { label: t('sidebar.jobGroups'),    path: '/profit/job-groups'    },
-    { label: t('sidebar.jobs'),         path: '/profit/jobs'          },
-    { label: t('sidebar.profitability'),path: '/profit/profitability' },
+    { label: t('sidebar.profitability'), path: '/profit/profitability' },
   ];
 
   const masterItems = [
-    { label: t('sidebar.vehicles'),    path: '/master/vehicles'    },
-    { label: t('sidebar.customers'),   path: '/master/customers'   },
-    { label: t('sidebar.drivers'),     path: '/master/drivers'     },
-    { label: t('sidebar.gaExpenses'),  path: '/master/ga-expenses' },
+    { label: t('sidebar.vehicles'),   path: '/master/vehicles'    },
+    { label: t('sidebar.customers'),  path: '/master/customers'   },
+    { label: t('sidebar.drivers'),    path: '/master/drivers'     },
+    { label: t('sidebar.gaExpenses'), path: '/master/ga-expenses' },
   ];
 
   const vehicleSubItems = [
@@ -25,19 +28,20 @@ export default function Sidebar() {
   ];
 
   const reportItems = [
-    { label: t('sidebar.plReport'),      path: '/reports/pl'      },
-    { label: t('sidebar.vehicleReport'), path: '/reports/vehicle' },
+    { label: t('sidebar.plReport'),         path: '/reports/pl'         },
+    { label: t('sidebar.vehicleReport'),    path: '/reports/vehicle'    },
+    { label: t('sidebar.jobGroupReport'),   path: '/reports/job-group'  },
   ];
 
-  const inProfit = pathname.startsWith('/profit');
-  const inMaster = pathname.startsWith('/master');
+  const inOps     = pathname.startsWith('/ops');
+  const inProfit  = pathname.startsWith('/profit');
+  const inMaster  = pathname.startsWith('/master');
   const inReports = pathname.startsWith('/reports');
 
-  if (!inProfit && !inMaster && !inReports) return null;
+  if (!inOps && !inProfit && !inMaster && !inReports) return null;
 
-  const items = inProfit ? profitItems : inMaster ? masterItems : reportItems;
+  const items = inOps ? opsItems : inProfit ? profitItems : inMaster ? masterItems : reportItems;
   const inVehicles = pathname.startsWith('/master/vehicles');
-  const inReportsSection = pathname.startsWith('/reports');
 
   return (
     <aside className="w-52 bg-slate-800 text-slate-300 flex-shrink-0 overflow-y-auto py-4">
@@ -45,7 +49,7 @@ export default function Sidebar() {
         const active = pathname === item.path ||
           (item.path !== '/master/vehicles' && pathname.startsWith(item.path + '/')) ||
           (item.path === '/master/vehicles' && pathname.startsWith('/master/vehicles')) ||
-          (inReportsSection && pathname.startsWith(item.path));
+          (inReports && pathname.startsWith(item.path));
         return (
           <div key={item.path}>
             <Link

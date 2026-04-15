@@ -73,24 +73,21 @@ export default function JobGroups() {
                   <ul className="space-y-1">
                     {displayJobs.map(j => (
                       <li key={j.id} className="flex items-center justify-between text-sm gap-2">
-                        <Link to={`/profit/jobs/${j.id}`} className="text-blue-600 hover:underline truncate">{j.name}</Link>
+                        <Link to={`/ops/jobs/${j.id}`} className="text-blue-600 hover:underline truncate">{j.name}</Link>
                         <Badge value={j.status} />
                       </li>
                     ))}
                     {groupJobs.length > 5 && (
                       <li className="text-xs text-slate-400 pt-1">
-                        {t('common.more', { count: groupJobs.length - 5 })} — <Link to="/profit/jobs" className="text-blue-500 hover:underline">{t('common.viewAll')}</Link>
+                        {t('common.more', { count: groupJobs.length - 5 })} — <Link to="/ops/jobs" className="text-blue-500 hover:underline">{t('common.viewAll')}</Link>
                       </li>
                     )}
                   </ul>
                 )}
               </div>
 
-              <div className="border-t border-slate-100 px-4 py-2 flex items-center justify-between">
+              <div className="border-t border-slate-100 px-4 py-2">
                 <span className="text-xs text-slate-400">{groupJobs.length} {t('sidebar.jobs').toLowerCase()}</span>
-                <Link to="/profit/profitability?tab=Job+Group" className="text-xs text-blue-500 hover:text-blue-700 font-medium hover:underline">
-                  {t('jobGroups.viewProfitability')}
-                </Link>
               </div>
             </div>
           );

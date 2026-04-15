@@ -16,8 +16,9 @@ export default function TopNav() {
 
   const sections = [
     { label: t('nav.dashboard'),    path: '/',                    prefix: '' },
-    { label: t('nav.profitCenter'), path: '/profit/job-groups',   prefix: '/profit' },
+    { label: t('nav.operations'),   path: '/ops/job-groups',      prefix: '/ops' },
     { label: t('nav.masterData'),   path: '/master/vehicles',     prefix: '/master' },
+    { label: t('nav.profitCenter'), path: '/profit/profitability',prefix: '/profit' },
     { label: t('nav.reports'),      path: '/reports/pl',          prefix: '/reports' },
   ];
 

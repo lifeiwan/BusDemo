@@ -51,7 +51,7 @@ export default function Jobs() {
               return (
                 <tr key={job.id} className="border-b border-slate-100 hover:bg-slate-50">
                   <td className="px-4 py-3 font-medium text-slate-800">
-                    <Link to={`/profit/jobs/${job.id}`} className="text-blue-600 hover:underline">{job.name}</Link>
+                    <Link to={`/ops/jobs/${job.id}`} className="text-blue-600 hover:underline">{job.name}</Link>
                     {lineItemCount > 0 && <span className="ml-1.5 text-xs bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-full">{lineItemCount} {t('jobs.fees')}</span>}
                   </td>
                   <td className="px-4 py-3 text-slate-600">{jg?.name ?? '—'}</td>

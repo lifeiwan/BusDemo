@@ -17,6 +17,7 @@ import JobDetail from './pages/JobDetail';
 import GaExpenses from './pages/GaExpenses';
 import Reports from './pages/Reports';
 import VehicleReport from './pages/VehicleReport';
+import JobGroupReport from './pages/JobGroupReport';
 import Login from './pages/Login';
 
 function ProtectedRoute({ children }: { children: ReactNode }) {
@@ -39,9 +40,9 @@ function AppShell() {
                 <main className="flex-1 overflow-y-auto p-6">
                   <Routes>
                     <Route path="/" element={<Dashboard />} />
-                    <Route path="/profit/job-groups" element={<JobGroups />} />
-                    <Route path="/profit/jobs" element={<Jobs />} />
-                    <Route path="/profit/jobs/:id" element={<JobDetail />} />
+                    <Route path="/ops/job-groups" element={<JobGroups />} />
+                    <Route path="/ops/jobs" element={<Jobs />} />
+                    <Route path="/ops/jobs/:id" element={<JobDetail />} />
                     <Route path="/profit/profitability" element={<Profitability />} />
                     <Route path="/master/vehicles" element={<Vehicles />} />
                     <Route path="/master/vehicles/:id" element={<VehicleDetail />} />
@@ -51,6 +52,7 @@ function AppShell() {
                     <Route path="/master/ga-expenses" element={<GaExpenses />} />
                     <Route path="/reports/pl" element={<Reports />} />
                     <Route path="/reports/vehicle" element={<VehicleReport />} />
+                    <Route path="/reports/job-group" element={<JobGroupReport />} />
                     <Route path="*" element={<Navigate to="/" replace />} />
                   </Routes>
                 </main>
