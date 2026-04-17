@@ -13,5 +13,5 @@ app.add_middleware(
 
 
 @app.get("/health")
-def health():
+def health() -> dict:
     return {"status": "ok"}
