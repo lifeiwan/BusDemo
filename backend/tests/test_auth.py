@@ -35,7 +35,7 @@ def _seed_company_and_user(db: Session, resource: str, action: str) -> dict:
 
 def test_missing_token_returns_403(client):
     response = client.get("/api/v1/vehicles")
-    assert response.status_code in (401, 403, 422)
+    assert response.status_code == 401
 
 
 def test_invalid_token_returns_401(client):
