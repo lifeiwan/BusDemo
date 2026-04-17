@@ -1,3 +1,4 @@
+from decimal import Decimal
 from sqlalchemy import String, Integer, ForeignKey, Numeric, Text
 from sqlalchemy.orm import Mapped, mapped_column
 from app.models.base import Base, EntityMixin
@@ -37,5 +38,5 @@ class DriverCost(Base, EntityMixin):
     )
     date: Mapped[str] = mapped_column(String(10), nullable=False)
     type: Mapped[str] = mapped_column(String(20), nullable=False)  # salary | bonus | reimbursement | other
-    amount: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False)
+    amount: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
     notes: Mapped[str] = mapped_column(Text, default="")

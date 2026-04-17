@@ -1,4 +1,5 @@
-from sqlalchemy import String, Integer, ForeignKey, Numeric, Text
+from decimal import Decimal
+from sqlalchemy import String, ForeignKey, Numeric, Text
 from sqlalchemy.orm import Mapped, mapped_column
 from app.models.base import Base, EntityMixin
 
@@ -27,9 +28,9 @@ class Job(Base, EntityMixin):
     customer_id: Mapped[int | None] = mapped_column(
         ForeignKey("customers.id", ondelete="SET NULL"), nullable=True
     )
-    revenue: Mapped[float] = mapped_column(Numeric(12, 2), nullable=False, default=0)
-    driver_payroll: Mapped[float] = mapped_column(Numeric(12, 2), nullable=False, default=0)
-    payments_received: Mapped[float] = mapped_column(Numeric(12, 2), nullable=False, default=0)
+    revenue: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False, default=0)
+    driver_payroll: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False, default=0)
+    payments_received: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False, default=0)
     recurrence: Mapped[str] = mapped_column(String(20), default="one_time")
     start_date: Mapped[str] = mapped_column(String(10), nullable=False)
     end_date: Mapped[str | None] = mapped_column(String(10), nullable=True)
@@ -45,5 +46,5 @@ class JobLineItem(Base, EntityMixin):
     date: Mapped[str] = mapped_column(String(10), nullable=False)
     category: Mapped[str] = mapped_column(String(100), nullable=False)
     direction: Mapped[str] = mapped_column(String(6), nullable=False)  # cost | income
-    amount: Mapped[float] = mapped_column(Numeric(12, 2), nullable=False)
+    amount: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
     notes: Mapped[str] = mapped_column(Text, default="")

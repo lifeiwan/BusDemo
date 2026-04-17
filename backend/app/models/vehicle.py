@@ -1,3 +1,4 @@
+from decimal import Decimal
 from sqlalchemy import String, Integer, Boolean, Numeric, ForeignKey, Text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
@@ -26,7 +27,7 @@ class VehicleFixedCost(Base, EntityMixin):
         ForeignKey("vehicles.id", ondelete="CASCADE"), nullable=False, index=True
     )
     type: Mapped[str] = mapped_column(String(30), nullable=False)  # loan | eld | management_fee
-    cost: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False)
+    cost: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
     start_date: Mapped[str] = mapped_column(String(10), nullable=False)  # YYYY-MM-DD
     notes: Mapped[str] = mapped_column(Text, default="")
 
@@ -39,7 +40,7 @@ class InsurancePolicy(Base, EntityMixin):
     )
     provider: Mapped[str] = mapped_column(String(200), default="")
     type: Mapped[str] = mapped_column(String(10), nullable=False)  # monthly | yearly
-    cost: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False)
+    cost: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
     start_date: Mapped[str] = mapped_column(String(10), nullable=False)
     notes: Mapped[str] = mapped_column(Text, default="")
 
@@ -51,7 +52,7 @@ class ParkingEntry(Base, EntityMixin):
         ForeignKey("vehicles.id", ondelete="CASCADE"), nullable=False, index=True
     )
     type: Mapped[str] = mapped_column(String(10), nullable=False)  # monthly | one_time
-    cost: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False)
+    cost: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
     start_date: Mapped[str | None] = mapped_column(String(10), nullable=True)
     date: Mapped[str | None] = mapped_column(String(10), nullable=True)
     location: Mapped[str] = mapped_column(String(255), default="")
@@ -70,7 +71,7 @@ class MaintenanceEntry(Base, EntityMixin):
     date: Mapped[str] = mapped_column(String(10), nullable=False)
     type: Mapped[str] = mapped_column(String(100), nullable=False)
     mileage: Mapped[int] = mapped_column(Integer, default=0)
-    cost: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False)
+    cost: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
     tech: Mapped[str] = mapped_column(String(100), default="")
     notes: Mapped[str] = mapped_column(Text, default="")
 
@@ -82,9 +83,9 @@ class FuelEntry(Base, EntityMixin):
         ForeignKey("vehicles.id", ondelete="CASCADE"), nullable=False, index=True
     )
     date: Mapped[str] = mapped_column(String(10), nullable=False)
-    gallons: Mapped[float] = mapped_column(Numeric(8, 3), nullable=False)
-    cpg: Mapped[float] = mapped_column(Numeric(6, 3), nullable=False)
-    total: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False)
+    gallons: Mapped[Decimal] = mapped_column(Numeric(8, 3), nullable=False)
+    cpg: Mapped[Decimal] = mapped_column(Numeric(6, 3), nullable=False)
+    total: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
     odometer: Mapped[int] = mapped_column(Integer, default=0)
     full: Mapped[bool] = mapped_column(Boolean, default=False)
 
