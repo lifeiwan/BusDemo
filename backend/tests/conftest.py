@@ -92,5 +92,6 @@ def authed_client(db, client):
         return_value={"uid": "admin-uid"},
     )
     patcher.start()
+    client.headers.update({"Authorization": "Bearer fake-token"})
     yield client
     patcher.stop()
