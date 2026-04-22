@@ -161,3 +161,18 @@ export interface ProfitRow {
   margin: number;
   accountsReceivable?: number;
 }
+
+export interface Role {
+  id: number;
+  name: string;
+  description: string;
+}
+
+export interface AppUser {
+  id: number;
+  firebaseUid: string;
+  email: string;
+  name: string;
+  roleId: number;
+  isActive: boolean;
+}
