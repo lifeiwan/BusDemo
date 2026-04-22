@@ -44,3 +44,53 @@ def client(db):
     with TestClient(app) as c:
         yield c
     app.dependency_overrides.clear()
+
+
+from unittest.mock import patch as _patch
+
+
+@pytest.fixture
+def authed_client(db, client):
+    """TestClient authenticated as an admin user with all permissions."""
+    from app.models.company import Company
+    from app.models.user import Role, Permission, RolePermission, User
+
+    company = Company(name="Test Co")
+    db.add(company)
+    db.flush()
+
+    resources = [
+        "operations", "master-data", "vehicle-ops",
+        "ga-expenses", "profit-center", "reports", "users",
+    ]
+    perms = []
+    for resource in resources:
+        for action in ("read", "write"):
+            p = Permission(resource=resource, action=action)
+            db.add(p)
+            db.flush()
+            perms.append(p)
+
+    role = Role(company_id=company.id, name="admin")
+    db.add(role)
+    db.flush()
+
+    for perm in perms:
+        db.add(RolePermission(role_id=role.id, permission_id=perm.id))
+
+    user = User(
+        company_id=company.id,
+        role_id=role.id,
+        firebase_uid="admin-uid",
+        email="admin@test.com",
+    )
+    db.add(user)
+    db.flush()
+
+    patcher = _patch(
+        "app.middleware.auth.firebase_auth.verify_id_token",
+        return_value={"uid": "admin-uid"},
+    )
+    patcher.start()
+    yield client
+    patcher.stop()
