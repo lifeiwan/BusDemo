@@ -1,14 +1,15 @@
 import firebase_admin
 from firebase_admin import credentials
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
-from app.middleware.auth import require_permission
 from app.routers import vehicles as vehicles_router
 from app.routers import vehicle_ops as vehicle_ops_router
 from app.routers import drivers as drivers_router
 from app.routers import customers as customers_router
 from app.routers import jobs as jobs_router
+from app.routers import ga as ga_router
+from app.routers import users as users_router
 
 if not firebase_admin._apps:
     if settings.firebase_credentials_path:
@@ -52,9 +53,6 @@ app.include_router(customers_router.router, prefix="/api/v1")
 app.include_router(jobs_router.groups_router, prefix="/api/v1")
 app.include_router(jobs_router.jobs_router, prefix="/api/v1")
 app.include_router(jobs_router.items_router, prefix="/api/v1")
-
-
-# Stub route — removed in Task 8
-@app.get("/api/v1/reports/pl", dependencies=[Depends(require_permission("reports", "read"))])
-def pl_report_stub():
-    return {}
+app.include_router(ga_router.router, prefix="/api/v1")
+app.include_router(users_router.roles_router, prefix="/api/v1")
+app.include_router(users_router.users_router, prefix="/api/v1")
