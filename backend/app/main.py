@@ -8,6 +8,7 @@ from app.routers import vehicles as vehicles_router
 from app.routers import vehicle_ops as vehicle_ops_router
 from app.routers import drivers as drivers_router
 from app.routers import customers as customers_router
+from app.routers import jobs as jobs_router
 
 if not firebase_admin._apps:
     if settings.firebase_credentials_path:
@@ -48,6 +49,9 @@ for _r in (
 app.include_router(drivers_router.router, prefix="/api/v1")
 app.include_router(drivers_router.assign_router, prefix="/api/v1")
 app.include_router(customers_router.router, prefix="/api/v1")
+app.include_router(jobs_router.groups_router, prefix="/api/v1")
+app.include_router(jobs_router.jobs_router, prefix="/api/v1")
+app.include_router(jobs_router.items_router, prefix="/api/v1")
 
 
 # Stub route — removed in Task 8
