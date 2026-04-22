@@ -11,6 +11,7 @@ from app.routers import jobs as jobs_router
 from app.routers import ga as ga_router
 from app.routers import users as users_router
 from app.routers import reports as reports_router
+from app.routers import profitability as profitability_router
 
 if not firebase_admin._apps:
     if settings.firebase_credentials_path:
@@ -58,3 +59,4 @@ app.include_router(ga_router.router, prefix="/api/v1")
 app.include_router(users_router.roles_router, prefix="/api/v1")
 app.include_router(users_router.users_router, prefix="/api/v1")
 app.include_router(reports_router.router, prefix="/api/v1")
+app.include_router(profitability_router.router, prefix="/api/v1")
