@@ -6,6 +6,8 @@ from app.config import settings
 from app.middleware.auth import require_permission
 from app.routers import vehicles as vehicles_router
 from app.routers import vehicle_ops as vehicle_ops_router
+from app.routers import drivers as drivers_router
+from app.routers import customers as customers_router
 
 if not firebase_admin._apps:
     if settings.firebase_credentials_path:
@@ -32,7 +34,7 @@ def health() -> dict:
 
 app.include_router(vehicles_router.router, prefix="/api/v1")
 
-for _router in (
+for _r in (
     vehicle_ops_router.maint,
     vehicle_ops_router.fuel,
     vehicle_ops_router.insp,
@@ -41,7 +43,11 @@ for _router in (
     vehicle_ops_router.vfc,
     vehicle_ops_router.dcosts,
 ):
-    app.include_router(_router, prefix="/api/v1")
+    app.include_router(_r, prefix="/api/v1")
+
+app.include_router(drivers_router.router, prefix="/api/v1")
+app.include_router(drivers_router.assign_router, prefix="/api/v1")
+app.include_router(customers_router.router, prefix="/api/v1")
 
 
 # Stub route — removed in Task 8
