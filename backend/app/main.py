@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.middleware.auth import require_permission
 from app.routers import vehicles as vehicles_router
+from app.routers import vehicle_ops as vehicle_ops_router
 
 if not firebase_admin._apps:
     if settings.firebase_credentials_path:
@@ -30,6 +31,17 @@ def health() -> dict:
 
 
 app.include_router(vehicles_router.router, prefix="/api/v1")
+
+for _router in (
+    vehicle_ops_router.maint,
+    vehicle_ops_router.fuel,
+    vehicle_ops_router.insp,
+    vehicle_ops_router.ins,
+    vehicle_ops_router.park,
+    vehicle_ops_router.vfc,
+    vehicle_ops_router.dcosts,
+):
+    app.include_router(_router, prefix="/api/v1")
 
 
 # Stub route — removed in Task 8
