@@ -18,18 +18,21 @@ import GaExpenses from './pages/GaExpenses';
 import Reports from './pages/Reports';
 import VehicleReport from './pages/VehicleReport';
 import JobGroupReport from './pages/JobGroupReport';
+import Users from './pages/Users';
 import Login from './pages/Login';
 
 function ProtectedRoute({ children }: { children: ReactNode }) {
-  const { isLoggedIn } = useAuth();
-  return isLoggedIn ? <>{children}</> : <Navigate to="/login" replace />;
+  const { user, loading } = useAuth();
+  if (loading) return null;
+  return user ? <>{children}</> : <Navigate to="/login" replace />;
 }
 
 function AppShell() {
-  const { isLoggedIn } = useAuth();
+  const { user, loading } = useAuth();
+  if (loading) return null;
   return (
     <Routes>
-      <Route path="/login" element={isLoggedIn ? <Navigate to="/" replace /> : <Login />} />
+      <Route path="/login" element={user ? <Navigate to="/" replace /> : <Login />} />
       <Route path="/*" element={
         <ProtectedRoute>
           <DataProvider>
@@ -53,6 +56,7 @@ function AppShell() {
                     <Route path="/reports/pl" element={<Reports />} />
                     <Route path="/reports/vehicle" element={<VehicleReport />} />
                     <Route path="/reports/job-group" element={<JobGroupReport />} />
+                    <Route path="/admin/users" element={<Users />} />
                     <Route path="*" element={<Navigate to="/" replace />} />
                   </Routes>
                 </main>

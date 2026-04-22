@@ -20,6 +20,7 @@ export default function TopNav() {
     { label: t('nav.masterData'),   path: '/master/vehicles',     prefix: '/master' },
     { label: t('nav.profitCenter'), path: '/profit/profitability',prefix: '/profit' },
     { label: t('nav.reports'),      path: '/reports/pl',          prefix: '/reports' },
+    { label: t('nav.admin'),        path: '/admin/users',         prefix: '/admin' },
   ];
 
   function isActive(prefix: string) {
@@ -66,7 +67,7 @@ export default function TopNav() {
 
       {/* Logout */}
       <button
-        onClick={() => { logout(); navigate('/login', { replace: true }); }}
+        onClick={() => { logout().then(() => navigate('/login', { replace: true })); }}
         className="ml-2 px-3 py-1.5 rounded text-xs font-semibold text-slate-400 hover:bg-slate-700 hover:text-white transition-colors"
       >
         {t('login.logout')}

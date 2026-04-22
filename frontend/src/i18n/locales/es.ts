@@ -14,6 +14,7 @@ export default {
     profitCenter: 'Centro de Ganancias',
     masterData: 'Datos Maestros',
     reports: 'Informes',
+    admin: 'Admin',
   },
   sidebar: {
     jobGroups: 'Grupos de Trabajo',

@@ -14,6 +14,7 @@ export default {
     profitCenter: 'Profit Center',
     masterData: 'Master Data',
     reports: 'Reports',
+    admin: 'Admin',
   },
   sidebar: {
     jobGroups: 'Job Groups',

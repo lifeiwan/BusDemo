@@ -14,6 +14,7 @@ export default {
     profitCenter: '利润中心',
     masterData: '主数据',
     reports: '报表',
+    admin: '管理',
   },
   sidebar: {
     jobGroups: '任务组',
