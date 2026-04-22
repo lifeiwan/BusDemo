@@ -142,3 +142,220 @@ def build_pl_report(db: Session, company_id: int, year: int) -> PLReport:
         for m in range(12)
     ]
     return PLReport(year=year, months=months)
+
+
+# ── Vehicle Report ────────────────────────────────────────────────────────────
+
+def _vehicle_row(v: Vehicle, v_jobs: list, job_line_items: list,
+                 fuel_entries: list, maintenance_entries: list,
+                 insurance_policies: list, vehicle_fixed_costs: list,
+                 parking_entries: list, year: int, month: int) -> VehicleRow:
+    v_job_ids = {j.id for j in v_jobs}
+
+    revenue = sum((j.revenue for j in v_jobs), Decimal("0"))
+    revenue += sum(
+        (li.amount for li in job_line_items
+         if li.job_id in v_job_ids and li.direction == "income" and _in_month(li.date, year, month)),
+        Decimal("0"),
+    )
+
+    payroll = sum((j.driver_payroll for j in v_jobs), Decimal("0"))
+
+    fuel = sum(
+        (e.total for e in fuel_entries if e.vehicle_id == v.id and _in_month(e.date, year, month)),
+        Decimal("0"),
+    )
+
+    repair = sum(
+        (e.cost for e in maintenance_entries if e.vehicle_id == v.id and _in_month(e.date, year, month)),
+        Decimal("0"),
+    )
+
+    others = sum(
+        (li.amount for li in job_line_items
+         if li.job_id in v_job_ids and li.direction == "cost"
+         and li.category != "EZ-Pass" and _in_month(li.date, year, month)),
+        Decimal("0"),
+    )
+
+    ez_pass = sum(
+        (li.amount for li in job_line_items
+         if li.job_id in v_job_ids and li.direction == "cost"
+         and li.category == "EZ-Pass" and _in_month(li.date, year, month)),
+        Decimal("0"),
+    )
+
+    insurance = _insurance_monthly(insurance_policies, v.id)
+    management_fee = _fixed_by_type(vehicle_fixed_costs, "management_fee", v.id)
+    loan = _fixed_by_type(vehicle_fixed_costs, "loan", v.id)
+    parking = _parking_in_month(parking_entries, year, month, v.id)
+    eld = _fixed_by_type(vehicle_fixed_costs, "eld", v.id)
+
+    net = revenue - payroll - fuel - repair - others - ez_pass - insurance - management_fee - loan - parking - eld
+    label = f"{v.year} {v.make} {v.model} ({v.license_plate})"
+
+    return VehicleRow(
+        vehicle_id=v.id, label=label, revenue=revenue, payroll=payroll,
+        fuel=fuel, repair=repair, others=others, ez_pass=ez_pass,
+        insurance=insurance, management_fee=management_fee, loan=loan,
+        parking=parking, eld=eld, net=net,
+    )
+
+
+def build_vehicle_report(db: Session, company_id: int, year: int, month: int) -> list[VehicleRow]:
+    """month is 1-indexed (1=Jan, 12=Dec)."""
+    m = month - 1  # convert to 0-indexed for helpers
+    vehicles = db.query(Vehicle).filter(Vehicle.company_id == company_id).all()
+    jobs = db.query(Job).filter(Job.company_id == company_id).all()
+    job_line_items = db.query(JobLineItem).filter(JobLineItem.company_id == company_id).all()
+    fuel_entries = db.query(FuelEntry).filter(FuelEntry.company_id == company_id).all()
+    maintenance_entries = db.query(MaintenanceEntry).filter(MaintenanceEntry.company_id == company_id).all()
+    insurance_policies = db.query(InsurancePolicy).filter(InsurancePolicy.company_id == company_id).all()
+    vehicle_fixed_costs = db.query(VehicleFixedCost).filter(VehicleFixedCost.company_id == company_id).all()
+    parking_entries = db.query(ParkingEntry).filter(ParkingEntry.company_id == company_id).all()
+
+    active = _active_jobs_in_month(jobs, year, m)
+    rows = [
+        _vehicle_row(
+            v, [j for j in active if j.vehicle_id == v.id],
+            job_line_items, fuel_entries, maintenance_entries,
+            insurance_policies, vehicle_fixed_costs, parking_entries, year, m,
+        )
+        for v in vehicles
+    ]
+    return sorted(rows, key=lambda r: r.revenue, reverse=True)
+
+
+def build_vehicle_ytd_report(db: Session, company_id: int, year: int, month_count: int) -> list[VehicleRow]:
+    """Accumulate vehicle rows for months 1..month_count."""
+    acc: dict[int, VehicleRow] = {}
+    for month in range(1, month_count + 1):
+        for row in build_vehicle_report(db, company_id, year, month):
+            if row.vehicle_id not in acc:
+                acc[row.vehicle_id] = row
+            else:
+                e = acc[row.vehicle_id]
+                acc[row.vehicle_id] = VehicleRow(
+                    vehicle_id=e.vehicle_id, label=e.label,
+                    revenue=e.revenue + row.revenue,
+                    payroll=e.payroll + row.payroll,
+                    fuel=e.fuel + row.fuel,
+                    repair=e.repair + row.repair,
+                    others=e.others + row.others,
+                    ez_pass=e.ez_pass + row.ez_pass,
+                    insurance=e.insurance + row.insurance,
+                    management_fee=e.management_fee + row.management_fee,
+                    loan=e.loan + row.loan,
+                    parking=e.parking + row.parking,
+                    eld=e.eld + row.eld,
+                    net=e.net + row.net,
+                )
+    return sorted(acc.values(), key=lambda r: r.revenue, reverse=True)
+
+
+# ── Job-Group Report ──────────────────────────────────────────────────────────
+
+def _job_group_row(jg: JobGroup, jg_jobs: list, job_line_items: list,
+                   fuel_entries: list, maintenance_entries: list,
+                   insurance_policies: list, vehicle_fixed_costs: list,
+                   parking_entries: list, year: int, month: int) -> JobGroupRow:
+    jg_job_ids = {j.id for j in jg_jobs}
+    vehicle_ids = {j.vehicle_id for j in jg_jobs if j.vehicle_id is not None}
+
+    revenue = sum((j.revenue for j in jg_jobs), Decimal("0"))
+    revenue += sum(
+        (li.amount for li in job_line_items
+         if li.job_id in jg_job_ids and li.direction == "income" and _in_month(li.date, year, month)),
+        Decimal("0"),
+    )
+
+    payroll = sum((j.driver_payroll for j in jg_jobs), Decimal("0"))
+
+    fuel = sum(
+        (e.total for e in fuel_entries if e.vehicle_id in vehicle_ids and _in_month(e.date, year, month)),
+        Decimal("0"),
+    )
+
+    repair = sum(
+        (e.cost for e in maintenance_entries if e.vehicle_id in vehicle_ids and _in_month(e.date, year, month)),
+        Decimal("0"),
+    )
+
+    others = sum(
+        (li.amount for li in job_line_items
+         if li.job_id in jg_job_ids and li.direction == "cost"
+         and li.category != "EZ-Pass" and _in_month(li.date, year, month)),
+        Decimal("0"),
+    )
+
+    ez_pass = sum(
+        (li.amount for li in job_line_items
+         if li.job_id in jg_job_ids and li.direction == "cost"
+         and li.category == "EZ-Pass" and _in_month(li.date, year, month)),
+        Decimal("0"),
+    )
+
+    insurance = sum((_insurance_monthly(insurance_policies, vid) for vid in vehicle_ids), Decimal("0"))
+    management_fee = sum((_fixed_by_type(vehicle_fixed_costs, "management_fee", vid) for vid in vehicle_ids), Decimal("0"))
+    loan = sum((_fixed_by_type(vehicle_fixed_costs, "loan", vid) for vid in vehicle_ids), Decimal("0"))
+    parking = sum((_parking_in_month(parking_entries, year, month, vid) for vid in vehicle_ids), Decimal("0"))
+    eld = sum((_fixed_by_type(vehicle_fixed_costs, "eld", vid) for vid in vehicle_ids), Decimal("0"))
+
+    net = revenue - payroll - fuel - repair - others - ez_pass - insurance - management_fee - loan - parking - eld
+
+    return JobGroupRow(
+        job_group_id=jg.id, label=jg.name, revenue=revenue, payroll=payroll,
+        fuel=fuel, repair=repair, others=others, ez_pass=ez_pass,
+        insurance=insurance, management_fee=management_fee, loan=loan,
+        parking=parking, eld=eld, net=net,
+    )
+
+
+def build_job_group_report(db: Session, company_id: int, year: int, month: int) -> list[JobGroupRow]:
+    """month is 1-indexed."""
+    m = month - 1
+    job_groups = db.query(JobGroup).filter(JobGroup.company_id == company_id).all()
+    jobs = db.query(Job).filter(Job.company_id == company_id).all()
+    job_line_items = db.query(JobLineItem).filter(JobLineItem.company_id == company_id).all()
+    fuel_entries = db.query(FuelEntry).filter(FuelEntry.company_id == company_id).all()
+    maintenance_entries = db.query(MaintenanceEntry).filter(MaintenanceEntry.company_id == company_id).all()
+    insurance_policies = db.query(InsurancePolicy).filter(InsurancePolicy.company_id == company_id).all()
+    vehicle_fixed_costs = db.query(VehicleFixedCost).filter(VehicleFixedCost.company_id == company_id).all()
+    parking_entries = db.query(ParkingEntry).filter(ParkingEntry.company_id == company_id).all()
+
+    active = _active_jobs_in_month(jobs, year, m)
+    rows = [
+        _job_group_row(
+            jg, [j for j in active if j.job_group_id == jg.id],
+            job_line_items, fuel_entries, maintenance_entries,
+            insurance_policies, vehicle_fixed_costs, parking_entries, year, m,
+        )
+        for jg in job_groups
+    ]
+    return sorted(rows, key=lambda r: r.revenue, reverse=True)
+
+
+def build_job_group_ytd_report(db: Session, company_id: int, year: int, month_count: int) -> list[JobGroupRow]:
+    acc: dict[int, JobGroupRow] = {}
+    for month in range(1, month_count + 1):
+        for row in build_job_group_report(db, company_id, year, month):
+            if row.job_group_id not in acc:
+                acc[row.job_group_id] = row
+            else:
+                e = acc[row.job_group_id]
+                acc[row.job_group_id] = JobGroupRow(
+                    job_group_id=e.job_group_id, label=e.label,
+                    revenue=e.revenue + row.revenue,
+                    payroll=e.payroll + row.payroll,
+                    fuel=e.fuel + row.fuel,
+                    repair=e.repair + row.repair,
+                    others=e.others + row.others,
+                    ez_pass=e.ez_pass + row.ez_pass,
+                    insurance=e.insurance + row.insurance,
+                    management_fee=e.management_fee + row.management_fee,
+                    loan=e.loan + row.loan,
+                    parking=e.parking + row.parking,
+                    eld=e.eld + row.eld,
+                    net=e.net + row.net,
+                )
+    return sorted(acc.values(), key=lambda r: r.revenue, reverse=True)

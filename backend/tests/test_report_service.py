@@ -101,3 +101,63 @@ def test_pl_report_empty_year(db):
     report = build_pl_report(db, company.id, 2030)
     assert len(report.months) == 12
     assert report.months[0].revenue == Decimal("0")
+
+
+from app.services.report import build_vehicle_report, build_vehicle_ytd_report, build_job_group_report, build_job_group_ytd_report
+
+
+def test_vehicle_report_january(db):
+    company_id = _seed(db)
+    rows = build_vehicle_report(db, company_id, 2025, 1)
+    assert len(rows) == 1
+    row = rows[0]
+    assert row.vehicle_id is not None
+    assert row.revenue == Decimal("5000.00")
+    assert row.payroll == Decimal("1500.00")
+    assert row.fuel == Decimal("175.00")
+    assert row.insurance == Decimal("400.00")
+    assert row.loan == Decimal("800.00")
+    assert row.repair == Decimal("0.00")
+    assert row.others == Decimal("0.00")
+    assert row.ez_pass == Decimal("0.00")
+    assert row.eld == Decimal("0.00")
+    assert row.management_fee == Decimal("0.00")
+    assert row.parking == Decimal("0.00")
+    # net = 5000 - 1500 - 175 - 0 - 0 - 0 - 400 - 0 - 800 - 0 - 0 = 2125
+    assert row.net == Decimal("2125.00")
+
+
+def test_vehicle_report_ytd_two_months(db):
+    company_id = _seed(db)
+    # Jan: fuel=175; Feb: fuel=0 (no entry in Feb). Insurance and loan apply both months.
+    rows = build_vehicle_ytd_report(db, company_id, 2025, 2)
+    assert len(rows) == 1
+    row = rows[0]
+    assert row.revenue == Decimal("10000.00")   # 5000 × 2 months
+    assert row.fuel == Decimal("175.00")        # only Jan has a fuel entry
+    assert row.insurance == Decimal("800.00")   # 400 × 2
+    assert row.loan == Decimal("1600.00")       # 800 × 2
+
+
+def test_job_group_report_january(db):
+    company_id = _seed(db)
+    rows = build_job_group_report(db, company_id, 2025, 1)
+    assert len(rows) == 1
+    row = rows[0]
+    assert row.job_group_id is not None
+    assert row.revenue == Decimal("5000.00")
+    assert row.payroll == Decimal("1500.00")
+    assert row.fuel == Decimal("175.00")
+    assert row.insurance == Decimal("400.00")
+    assert row.loan == Decimal("800.00")
+    # net = 5000 - 1500 - 175 - 0 - 0 - 0 - 400 - 0 - 800 - 0 - 0 = 2125
+    assert row.net == Decimal("2125.00")
+
+
+def test_job_group_ytd_two_months(db):
+    company_id = _seed(db)
+    rows = build_job_group_ytd_report(db, company_id, 2025, 2)
+    assert len(rows) == 1
+    row = rows[0]
+    assert row.revenue == Decimal("10000.00")
+    assert row.insurance == Decimal("800.00")
