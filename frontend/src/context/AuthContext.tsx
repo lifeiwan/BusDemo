@@ -1,36 +1,50 @@
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
+import type { User } from 'firebase/auth';
+import {
+  signInWithEmailAndPassword,
+  signOut,
+  sendPasswordResetEmail,
+  onAuthStateChanged,
+} from 'firebase/auth';
+import { auth } from '../firebase';
 
 interface AuthContextValue {
-  isLoggedIn: boolean;
-  login: (username: string, password: string) => boolean;
-  logout: () => void;
+  user: User | null;
+  loading: boolean;
+  login: (email: string, password: string) => Promise<void>;
+  logout: () => Promise<void>;
+  resetPassword: (email: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-const STORAGE_KEY = 'evabus_auth';
-
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(
-    () => localStorage.getItem(STORAGE_KEY) === 'true'
-  );
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  function login(username: string, password: string): boolean {
-    // TODO: replace with real backend auth check
-    if (!username.trim() || !password.trim()) return false;
-    setIsLoggedIn(true);
-    localStorage.setItem(STORAGE_KEY, 'true');
-    return true;
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, (u) => {
+      setUser(u);
+      setLoading(false);
+    });
+    return unsub;
+  }, []);
+
+  async function login(email: string, password: string): Promise<void> {
+    await signInWithEmailAndPassword(auth, email, password);
   }
 
-  function logout() {
-    setIsLoggedIn(false);
-    localStorage.removeItem(STORAGE_KEY);
+  async function logout(): Promise<void> {
+    await signOut(auth);
+  }
+
+  async function resetPassword(email: string): Promise<void> {
+    await sendPasswordResetEmail(auth, email);
   }
 
   return (
-    <AuthContext.Provider value={{ isLoggedIn, login, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, logout, resetPassword }}>
       {children}
     </AuthContext.Provider>
   );
