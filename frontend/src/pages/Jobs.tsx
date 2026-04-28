@@ -15,6 +15,9 @@ export default function Jobs() {
   const { jobs, vehicles, drivers, customers, jobGroups, jobLineItems, deleteJob } = useData();
   const [modal, setModal] = useState<{ open: boolean; editing: Job | null }>({ open: false, editing: null });
 
+  const _now = new Date();
+  const today = `${_now.getFullYear()}-${String(_now.getMonth() + 1).padStart(2, '0')}-${String(_now.getDate()).padStart(2, '0')}`;
+
   function del(j: Job) {
     if (window.confirm(t('jobs.confirmDelete', { name: j.name }))) deleteJob(j.id);
   }
@@ -48,10 +51,16 @@ export default function Jobs() {
               const customer = customers.find(c => c.id === job.customerId);
               const jg = jobGroups.find(x => x.id === job.jobGroupId);
               const lineItemCount = jobLineItems.filter(li => li.jobId === job.id).length;
+              const isToday = job.startDate === today && job.status === 'scheduled';
               return (
-                <tr key={job.id} className="border-b border-slate-100 hover:bg-slate-50">
+                <tr key={job.id} className={`border-b border-slate-100 ${isToday ? 'border-l-4 border-l-amber-400 bg-amber-50/40' : 'hover:bg-slate-50'}`}>
                   <td className="px-4 py-3 font-medium text-slate-800">
                     <Link to={`/ops/jobs/${job.id}`} className="text-blue-600 hover:underline">{job.name}</Link>
+                    {isToday && (
+                      <span className="ml-1.5 text-xs bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full font-medium">
+                        {t('jobGroups.scheduledToday')}
+                      </span>
+                    )}
                     {lineItemCount > 0 && <span className="ml-1.5 text-xs bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-full">{lineItemCount} {t('jobs.fees')}</span>}
                   </td>
                   <td className="px-4 py-3 text-slate-600">{jg?.name ?? '—'}</td>
