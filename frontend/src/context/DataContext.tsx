@@ -31,6 +31,7 @@ interface DataContextValue extends DataSnapshot {
   addJob: (j: Omit<Job, 'id'>) => void;
   updateJob: (j: Job) => void;
   deleteJob: (id: number) => void;
+  patchJobStatus: (id: number, status: string) => Promise<void>;
   // Job Line Items
   addJobLineItem: (li: Omit<JobLineItem, 'id'>) => void;
   updateJobLineItem: (li: JobLineItem) => void;
@@ -210,6 +211,15 @@ export function DataProvider({ children }: { children: ReactNode }) {
       () => apiFetch(`/api/v1/jobs/${id}`, { method: 'DELETE' }),
       () => setJobs(prev => prev.filter(x => x.id !== id))
     ),
+    patchJobStatus: async (id: number, status: string) => {
+      const job = jobs.find(j => j.id === id);
+      if (!job) return;
+      const updated = await apiFetch<Job>(`/api/v1/jobs/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify({ ...job, status }),
+      });
+      setJobs(prev => prev.map(x => x.id === id ? updated : x));
+    },
 
     // Job Line Items
     addJobLineItem: async (li) => run(
