@@ -52,8 +52,7 @@ export default function JobDetail() {
           <div>
             <h1 className="text-2xl font-bold text-slate-800">{job.name}</h1>
             <p className="text-sm text-slate-500 mt-1">
-              {jobGroup?.name} · {job.recurrence.replace('_', '-')} · {job.startDate}
-              {job.endDate ? ` → ${job.endDate}` : ''}
+              {jobGroup?.name} · {job.startDate}
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -115,19 +114,9 @@ export default function JobDetail() {
               <dd className="font-medium text-slate-700">{driver?.name ?? <span className="text-slate-400">{t('jobDetail.unassigned')}</span>}</dd>
             </div>
             <div>
-              <dt className="text-xs text-slate-500 uppercase tracking-wide mb-0.5">{t('jobDetail.recurrenceLabel')}</dt>
-              <dd className="text-slate-700 capitalize">{job.recurrence.replace('_', '-')}</dd>
-            </div>
-            <div>
-              <dt className="text-xs text-slate-500 uppercase tracking-wide mb-0.5">{t('jobDetail.startDateLabel')}</dt>
+              <dt className="text-xs text-slate-500 uppercase tracking-wide mb-0.5">{t('jobDetail.dateLabel')}</dt>
               <dd className="text-slate-700">{job.startDate}</dd>
             </div>
-            {job.endDate && (
-              <div>
-                <dt className="text-xs text-slate-500 uppercase tracking-wide mb-0.5">{t('jobDetail.endDateLabel')}</dt>
-                <dd className="text-slate-700">{job.endDate}</dd>
-              </div>
-            )}
             <div>
               <dt className="text-xs text-slate-500 uppercase tracking-wide mb-0.5">{t('jobDetail.statusLabel')}</dt>
               <dd><Badge value={job.status} /></dd>
