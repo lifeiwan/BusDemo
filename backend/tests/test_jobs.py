@@ -10,7 +10,6 @@ JOB_PAYLOAD_TEMPLATE = {
     "revenue": "5000.00",
     "driver_payroll": "1500.00",
     "payments_received": "5000.00",
-    "recurrence": "daily",
     "start_date": "2024-01-01",
     "status": "active",
 }
