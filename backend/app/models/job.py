@@ -11,10 +11,10 @@ class JobGroup(Base, EntityMixin):
     type: Mapped[str] = mapped_column(String(10), nullable=False, default="route")  # route | one_time
     description: Mapped[str] = mapped_column(Text, default="")
     customer_id: Mapped[int | None] = mapped_column(
-        ForeignKey("customers.id", ondelete="SET NULL"), nullable=True
+        ForeignKey("customers.id", ondelete="SET NULL"), nullable=True, index=True
     )
     vehicle_id: Mapped[int | None] = mapped_column(
-        ForeignKey("vehicles.id", ondelete="SET NULL"), nullable=True
+        ForeignKey("vehicles.id", ondelete="SET NULL"), nullable=True, index=True
     )
     default_revenue: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False, default=0)
     default_driver_payroll: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False, default=0)
