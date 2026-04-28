@@ -6,13 +6,21 @@ import type { Job, JobLineItem } from '../types';
 
 type FormState = Omit<Job, 'id'>;
 
-function blankForm(vehicleId = 0, driverId: number | null = null, customerId = 0, jobGroupId = 0): FormState {
+function blankForm(
+  prefill: Partial<FormState> = {},
+  defaults: { vehicleId: number; customerId: number; jobGroupId: number }
+): FormState {
   return {
-    name: '', jobGroupId, vehicleId, driverId, customerId,
-    revenue: 0, driverPayroll: 0, paymentsReceived: 0,
-    recurrence: 'one_time',
-    startDate: new Date().toISOString().slice(0, 10),
-    endDate: null, status: 'scheduled',
+    name: prefill.name ?? '',
+    jobGroupId: prefill.jobGroupId ?? defaults.jobGroupId,
+    vehicleId: prefill.vehicleId ?? defaults.vehicleId,
+    driverId: prefill.driverId ?? null,
+    customerId: prefill.customerId ?? defaults.customerId,
+    revenue: prefill.revenue ?? 0,
+    driverPayroll: prefill.driverPayroll ?? 0,
+    paymentsReceived: 0,
+    startDate: prefill.startDate ?? new Date().toISOString().slice(0, 10),
+    status: 'scheduled',
   };
 }
 
@@ -26,12 +34,12 @@ type FuelDraft = { enabled: boolean; gallons: string; cpg: string; odometer: str
 const blankFuelDraft = (): FuelDraft => ({ enabled: false, gallons: '', cpg: '', odometer: '' });
 
 interface Props {
-  /** null = Add mode, Job = Edit mode */
   editing: Job | null;
+  prefill?: Partial<FormState>;
   onClose: () => void;
 }
 
-export default function JobModal({ editing, onClose }: Props) {
+export default function JobModal({ editing, prefill, onClose }: Props) {
   const { t } = useTranslation();
   const data = useData();
   const { jobs, vehicles, drivers, customers, jobGroups, jobLineItems,
@@ -39,11 +47,22 @@ export default function JobModal({ editing, onClose }: Props) {
     addJobLineItem, deleteJobLineItemsByJobId,
     addFuel } = data;
 
-  // Initialise form from editing job or blank
+  const defaults = {
+    vehicleId: vehicles[0]?.id ?? 0,
+    customerId: customers[0]?.id ?? 0,
+    jobGroupId: jobGroups[0]?.id ?? 0,
+  };
+
   const [form, setForm] = useState<FormState>(() =>
     editing
-      ? { name: editing.name, jobGroupId: editing.jobGroupId, vehicleId: editing.vehicleId, driverId: editing.driverId, customerId: editing.customerId, revenue: editing.revenue, driverPayroll: editing.driverPayroll, paymentsReceived: editing.paymentsReceived, recurrence: editing.recurrence, startDate: editing.startDate, endDate: editing.endDate, status: editing.status }
-      : blankForm(vehicles[0]?.id ?? 0, null, customers[0]?.id ?? 0, jobGroups[0]?.id ?? 0)
+      ? {
+          name: editing.name, jobGroupId: editing.jobGroupId,
+          vehicleId: editing.vehicleId, driverId: editing.driverId,
+          customerId: editing.customerId, revenue: editing.revenue,
+          driverPayroll: editing.driverPayroll, paymentsReceived: editing.paymentsReceived,
+          startDate: editing.startDate, status: editing.status,
+        }
+      : blankForm(prefill, defaults)
   );
 
   const [draftItems, setDraftItems] = useState<DraftLineItem[]>(() =>
@@ -57,7 +76,7 @@ export default function JobModal({ editing, onClose }: Props) {
   );
 
   const [newItem, setNewItem] = useState<Omit<DraftLineItem, '_key'>>({
-    date: editing?.startDate ?? new Date().toISOString().slice(0, 10),
+    date: editing?.startDate ?? prefill?.startDate ?? new Date().toISOString().slice(0, 10),
     category: 'Toll', direction: 'cost', amount: 0, notes: '',
   });
 
@@ -75,8 +94,13 @@ export default function JobModal({ editing, onClose }: Props) {
 
   function save() {
     if (!form.name.trim() || !form.vehicleId || !form.customerId || !form.jobGroupId) return;
-    if (form.driverId && !Number(form.driverPayroll)) return; // payroll required when driver assigned
-    const payload = { ...form, revenue: Number(form.revenue), driverPayroll: Number(form.driverPayroll), paymentsReceived: Number(form.paymentsReceived), endDate: form.endDate || null };
+    if (form.driverId && !Number(form.driverPayroll)) return;
+    const payload = {
+      ...form,
+      revenue: Number(form.revenue),
+      driverPayroll: Number(form.driverPayroll),
+      paymentsReceived: Number(form.paymentsReceived),
+    };
 
     let jobId: number;
     if (editing) {
@@ -122,7 +146,6 @@ export default function JobModal({ editing, onClose }: Props) {
     : '—';
 
   const lineItemsTotal = draftItems.reduce((s, x) => x.direction === 'cost' ? s - x.amount : s + x.amount, 0);
-
   const fmt$ = (n: number) => '$' + Math.abs(n).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 
   return (
@@ -146,7 +169,7 @@ export default function JobModal({ editing, onClose }: Props) {
           </div>
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">{t('jobs.customer')} *</label>
-            <select value={form.customerId} onChange={set('customerId')}
+            <select value={form.customerId ?? 0} onChange={set('customerId')}
               className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
               <option value={0}>{t('jobs.select')}</option>
               {customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
@@ -154,7 +177,7 @@ export default function JobModal({ editing, onClose }: Props) {
           </div>
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">{t('jobs.vehicle')} *</label>
-            <select value={form.vehicleId} onChange={set('vehicleId')}
+            <select value={form.vehicleId ?? 0} onChange={set('vehicleId')}
               className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
               <option value={0}>{t('jobs.select')}</option>
               {vehicles.map(v => <option key={v.id} value={v.id}>{v.year} {v.make} {v.model}</option>)}
@@ -187,23 +210,8 @@ export default function JobModal({ editing, onClose }: Props) {
               className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">{t('jobs.recurrence')}</label>
-            <select value={form.recurrence} onChange={set('recurrence')}
-              className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-              <option value="daily">{t('jobs.recurrenceDaily')}</option>
-              <option value="weekly">{t('jobs.recurrenceWeekly')}</option>
-              <option value="monthly">{t('jobs.recurrenceMonthly')}</option>
-              <option value="one_time">{t('jobs.recurrenceOneTime')}</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">{t('jobs.startDate')}</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">{t('jobs.date')}</label>
             <input type="date" value={form.startDate} onChange={set('startDate')}
-              className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">{t('jobs.endDate')}</label>
-            <input type="date" value={form.endDate ?? ''} onChange={e => setForm(f => ({ ...f, endDate: e.target.value || null }))}
               className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
           </div>
           <div>
@@ -327,7 +335,7 @@ export default function JobModal({ editing, onClose }: Props) {
             <label htmlFor="fuel-toggle" className="text-sm font-semibold text-slate-700 cursor-pointer">
               {t('jobs.fuelSection')}
             </label>
-            {form.vehicleId > 0 && (
+            {(form.vehicleId ?? 0) > 0 && (
               <span className="text-xs text-slate-400">
                 → {vehicles.find(v => v.id === form.vehicleId)?.make} {vehicles.find(v => v.id === form.vehicleId)?.model}
               </span>
