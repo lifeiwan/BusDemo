@@ -63,6 +63,20 @@ def test_delete_job_group(authed_client, group_id):
     assert authed_client.get(f"{BASE_GROUPS}/{group_id}").status_code == 404
 
 
+def test_job_group_template_fields(authed_client):
+    payload = {
+        "name": "School Route A", "type": "route", "description": "",
+        "recurrence": "weekly", "default_revenue": 1500.0, "default_driver_payroll": 500.0,
+        "customer_id": None, "vehicle_id": None,
+    }
+    r = authed_client.post(BASE_GROUPS, json=payload)
+    assert r.status_code == 201
+    body = r.json()
+    assert body["recurrence"] == "weekly"
+    assert body["default_revenue"] == 1500.0
+    assert body["default_driver_payroll"] == 500.0
+
+
 # ── Jobs ──────────────────────────────────────────────────────────────────────
 
 def test_list_jobs_empty(authed_client, group_id):

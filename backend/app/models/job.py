@@ -10,6 +10,15 @@ class JobGroup(Base, EntityMixin):
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     type: Mapped[str] = mapped_column(String(10), nullable=False, default="route")  # route | one_time
     description: Mapped[str] = mapped_column(Text, default="")
+    customer_id: Mapped[int | None] = mapped_column(
+        ForeignKey("customers.id", ondelete="SET NULL"), nullable=True
+    )
+    vehicle_id: Mapped[int | None] = mapped_column(
+        ForeignKey("vehicles.id", ondelete="SET NULL"), nullable=True
+    )
+    default_revenue: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False, default=0)
+    default_driver_payroll: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False, default=0)
+    recurrence: Mapped[str] = mapped_column(String(20), nullable=False, default="one_time")
 
 
 class Job(Base, EntityMixin):
@@ -31,9 +40,7 @@ class Job(Base, EntityMixin):
     revenue: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False, default=0)
     driver_payroll: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False, default=0)
     payments_received: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False, default=0)
-    recurrence: Mapped[str] = mapped_column(String(20), default="one_time")
     start_date: Mapped[str] = mapped_column(String(10), nullable=False)
-    end_date: Mapped[str | None] = mapped_column(String(10), nullable=True)
     status: Mapped[str] = mapped_column(String(15), nullable=False, default="active")  # active | completed | scheduled
 
 

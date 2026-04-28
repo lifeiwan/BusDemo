@@ -7,6 +7,11 @@ class JobGroupBase(BaseModel):
     name: str
     type: str = "route"  # route | one_time
     description: str = ""
+    customer_id: Optional[int] = None
+    vehicle_id: Optional[int] = None
+    default_revenue: float = 0.0
+    default_driver_payroll: float = 0.0
+    recurrence: str = "one_time"  # daily | weekly | monthly | one_time
 
 
 class JobGroupCreate(JobGroupBase):
@@ -35,9 +40,7 @@ class JobBase(BaseModel):
     revenue: float = 0.0
     driver_payroll: float = 0.0
     payments_received: float = 0.0
-    recurrence: str = "one_time"  # daily | weekly | monthly | one_time
     start_date: str
-    end_date: Optional[str] = None
     status: str = "active"  # active | completed | scheduled
 
 
