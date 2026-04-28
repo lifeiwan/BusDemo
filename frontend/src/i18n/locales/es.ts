@@ -287,4 +287,11 @@ export default {
     fullYear: 'Año Completo',
     confirmDelete: '¿Eliminar registro "{{category}}" del {{date}}?',
   },
+  statusSwitcher: {
+    confirmPrompt: '¿Cambiar estado a {{status}}?',
+    confirm: 'Confirmar',
+    cancel: 'Cancelar',
+    saving: 'Guardando…',
+    error: 'Error al guardar — intente de nuevo',
+  },
 } as const;

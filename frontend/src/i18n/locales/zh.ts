@@ -287,4 +287,11 @@ export default {
     fullYear: '全年',
     confirmDelete: '删除 {{date}} 的"{{category}}"记录？',
   },
+  statusSwitcher: {
+    confirmPrompt: '将状态更改为{{status}}？',
+    confirm: '确认',
+    cancel: '取消',
+    saving: '保存中…',
+    error: '保存失败 — 请重试',
+  },
 } as const;

@@ -287,4 +287,11 @@ export default {
     fullYear: 'Full Year',
     confirmDelete: 'Delete {{category}} entry from {{date}}?',
   },
+  statusSwitcher: {
+    confirmPrompt: 'Change status to {{status}}?',
+    confirm: 'Confirm',
+    cancel: 'Cancel',
+    saving: 'Saving…',
+    error: 'Failed to save — try again',
+  },
 } as const;
