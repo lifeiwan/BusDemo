@@ -29,9 +29,7 @@ def _in_month(date_str: str, year: int, month: int) -> bool:
 
 
 def _active_jobs_in_month(jobs: list, year: int, month: int) -> list:
-    start = _month_start(year, month)
-    end = _month_end(year, month)
-    return [j for j in jobs if j.start_date <= end and (j.end_date is None or j.end_date >= start)]
+    return [j for j in jobs if _in_month(j.start_date, year, month)]
 
 
 # ── Cost helpers ──────────────────────────────────────────────────────────────

@@ -19,10 +19,7 @@ def _in_range(date_str: str, from_date: str, to_date: str) -> bool:
 
 
 def _active_jobs_in_range(jobs: list, from_date: str, to_date: str) -> list:
-    return [
-        j for j in jobs
-        if j.start_date <= to_date and (j.end_date is None or j.end_date >= from_date)
-    ]
+    return [j for j in jobs if from_date <= j.start_date <= to_date]
 
 
 def _months_in_range(from_date: str, to_date: str) -> int:
