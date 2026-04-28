@@ -25,14 +25,9 @@ function inMonth(date: string, year: number, m: number): boolean {
   return date.startsWith(`${year}-${mm}`);
 }
 
-function lastDay(year: number, m: number): string {
-  return new Date(year, m + 1, 0).toISOString().slice(0, 10);
-}
 
 function activeJobsInMonth(year: number, m: number, data: DataSnapshot) {
-  const start = `${year}-${String(m + 1).padStart(2, '0')}-01`;
-  const end = lastDay(year, m);
-  return data.jobs.filter(j => j.startDate <= end && (!j.endDate || j.endDate >= start));
+  return data.jobs.filter(j => inMonth(j.startDate, year, m));
 }
 
 function computeMonth(year: number, m: number, data: DataSnapshot): PLMonthData {

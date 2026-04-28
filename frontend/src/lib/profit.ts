@@ -152,11 +152,7 @@ export function jobNetProfit(jobId: number, range: DateRange, data: DataSnapshot
 // ── Job filtering ─────────────────────────────────────────
 
 function activeJobs(range: DateRange, data: DataSnapshot) {
-  return data.jobs.filter(j => {
-    const started = j.startDate <= range.endDate;
-    const notEnded = !j.endDate || j.endDate >= range.startDate;
-    return started && notEnded;
-  });
+  return data.jobs.filter(j => j.startDate >= range.startDate && j.startDate <= range.endDate);
 }
 
 // ── Pivot functions ───────────────────────────────────────
