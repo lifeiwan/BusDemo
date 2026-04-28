@@ -39,7 +39,8 @@ export default function JobGroups() {
   const data = useData();
   const { jobGroups, jobs, vehicles, customers, addJobGroup, updateJobGroup, deleteJobGroup } = data;
 
-  const today = new Date().toISOString().slice(0, 10);
+  const _now = new Date();
+  const today = `${_now.getFullYear()}-${String(_now.getMonth() + 1).padStart(2, '0')}-${String(_now.getDate()).padStart(2, '0')}`;
 
   const [modal, setModal] = useState<{ open: boolean; editing: JobGroup | null }>({ open: false, editing: null });
   const [form, setForm] = useState<FormState>(blank);
