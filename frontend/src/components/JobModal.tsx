@@ -20,7 +20,7 @@ function blankForm(
     driverPayroll: prefill.driverPayroll ?? 0,
     paymentsReceived: 0,
     startDate: prefill.startDate ?? new Date().toISOString().slice(0, 10),
-    status: 'scheduled',
+    status: prefill.status ?? 'scheduled',
   };
 }
 
