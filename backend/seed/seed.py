@@ -228,32 +228,32 @@ def seed():
 
         # ── Insurance Policies ────────────────────────────────
         INSURANCE = [
-            dict(vehicle_id=v0, provider="State Farm",      policy_number="SF-10001", cost=890,  type="monthly", start_date="2024-01-01", end_date=None),
-            dict(vehicle_id=v1, provider="Progressive",     policy_number="PR-20002", cost=820,  type="monthly", start_date="2024-01-01", end_date=None),
-            dict(vehicle_id=v2, provider="State Farm",      policy_number="SF-10003", cost=760,  type="monthly", start_date="2024-01-01", end_date=None),
-            dict(vehicle_id=v3, provider="Geico",           policy_number="GE-30004", cost=950,  type="monthly", start_date="2024-01-01", end_date=None),
-            dict(vehicle_id=v5, provider="Progressive",     policy_number="PR-20006", cost=1050, type="monthly", start_date="2024-01-01", end_date=None),
-            dict(vehicle_id=v6, provider="Allstate",        policy_number="AL-40007", cost=780,  type="monthly", start_date="2024-01-01", end_date=None),
-            dict(vehicle_id=v7, provider="State Farm",      policy_number="SF-10008", cost=840,  type="monthly", start_date="2024-01-01", end_date=None),
-            dict(vehicle_id=v8, provider="Geico",           policy_number="GE-30009", cost=920,  type="monthly", start_date="2024-01-01", end_date=None),
-            dict(vehicle_id=v9, provider="Allstate",        policy_number="AL-40010", cost=870,  type="monthly", start_date="2024-01-01", end_date=None),
+            dict(vehicle_id=v0, provider="State Farm",  cost=890,  type="monthly", start_date="2024-01-01"),
+            dict(vehicle_id=v1, provider="Progressive", cost=820,  type="monthly", start_date="2024-01-01"),
+            dict(vehicle_id=v2, provider="State Farm",  cost=760,  type="monthly", start_date="2024-01-01"),
+            dict(vehicle_id=v3, provider="Geico",       cost=950,  type="monthly", start_date="2024-01-01"),
+            dict(vehicle_id=v5, provider="Progressive", cost=1050, type="monthly", start_date="2024-01-01"),
+            dict(vehicle_id=v6, provider="Allstate",    cost=780,  type="monthly", start_date="2024-01-01"),
+            dict(vehicle_id=v7, provider="State Farm",  cost=840,  type="monthly", start_date="2024-01-01"),
+            dict(vehicle_id=v8, provider="Geico",       cost=920,  type="monthly", start_date="2024-01-01"),
+            dict(vehicle_id=v9, provider="Allstate",    cost=870,  type="monthly", start_date="2024-01-01"),
         ]
         for ins in INSURANCE:
             exists = db.query(InsurancePolicy).filter_by(
-                company_id=cid, policy_number=ins["policy_number"]
+                company_id=cid, vehicle_id=ins["vehicle_id"], provider=ins["provider"]
             ).first()
             if not exists:
                 db.add(InsurancePolicy(company_id=cid, notes="", **ins))
 
         # ── Parking Entries ───────────────────────────────────
         PARKING = [
-            dict(vehicle_id=v0, type="monthly", cost=250, date=None,         notes="Depot lot A"),
-            dict(vehicle_id=v1, type="monthly", cost=250, date=None,         notes="Depot lot A"),
-            dict(vehicle_id=v3, type="monthly", cost=300, date=None,         notes="Airport overflow lot"),
-            dict(vehicle_id=v6, type="monthly", cost=250, date=None,         notes="Depot lot B"),
-            dict(vehicle_id=v7, type="monthly", cost=300, date=None,         notes="Midtown garage"),
-            dict(vehicle_id=v8, type="monthly", cost=275, date=None,         notes="City depot"),
-            dict(vehicle_id=v2, type="one_time", cost=180, date="2026-02-15",notes="Body shop parking"),
+            dict(vehicle_id=v0, type="monthly",  cost=250, start_date="2024-01-01", date=None,         location="Depot lot A",      notes=""),
+            dict(vehicle_id=v1, type="monthly",  cost=250, start_date="2024-01-01", date=None,         location="Depot lot A",      notes=""),
+            dict(vehicle_id=v3, type="monthly",  cost=300, start_date="2024-01-01", date=None,         location="Airport overflow",  notes=""),
+            dict(vehicle_id=v6, type="monthly",  cost=250, start_date="2024-01-01", date=None,         location="Depot lot B",      notes=""),
+            dict(vehicle_id=v7, type="monthly",  cost=300, start_date="2024-01-01", date=None,         location="Midtown garage",   notes=""),
+            dict(vehicle_id=v8, type="monthly",  cost=275, start_date="2024-01-01", date=None,         location="City depot",       notes=""),
+            dict(vehicle_id=v2, type="one_time", cost=180, start_date=None,         date="2026-02-15", location="Body shop",        notes=""),
         ]
         for p in PARKING:
             exists = db.query(ParkingEntry).filter_by(
@@ -264,61 +264,62 @@ def seed():
 
         # ── Maintenance Entries ───────────────────────────────
         MAINTENANCE = [
-            dict(vehicle_id=v0, date="2026-01-08", description="Oil change + filter",       cost=180,  technician="A. Smith",   odometer=144100, notes=""),
-            dict(vehicle_id=v0, date="2026-03-15", description="Brake pad replacement",     cost=620,  technician="A. Smith",   odometer=145230, notes="Front and rear"),
-            dict(vehicle_id=v1, date="2026-01-20", description="Tire rotation",             cost=95,   technician="B. Jones",   odometer=97800,  notes=""),
-            dict(vehicle_id=v1, date="2026-02-28", description="AC system service",         cost=340,  technician="B. Jones",   odometer=98450,  notes="Refrigerant recharge"),
-            dict(vehicle_id=v2, date="2026-01-10", description="Engine diagnostic",         cost=150,  technician="C. Rivera",  odometer=209000, notes="Check engine light"),
-            dict(vehicle_id=v2, date="2026-02-05", description="Alternator replacement",    cost=850,  technician="C. Rivera",  odometer=210000, notes="Original failed"),
-            dict(vehicle_id=v3, date="2026-02-12", description="Oil change",                cost=165,  technician="A. Smith",   odometer=67200,  notes=""),
-            dict(vehicle_id=v5, date="2026-01-25", description="Battery replacement",       cost=280,  technician="D. Kim",     odometer=33900,  notes="Cold weather failure"),
-            dict(vehicle_id=v6, date="2026-03-01", description="Oil change + tire rotate",  cost=220,  technician="B. Jones",   odometer=78500,  notes=""),
-            dict(vehicle_id=v7, date="2026-01-15", description="Transmission service",      cost=490,  technician="C. Rivera",  odometer=155200, notes="Fluid and filter"),
-            dict(vehicle_id=v8, date="2026-02-20", description="Brake inspection",          cost=120,  technician="A. Smith",   odometer=44800,  notes="All clear"),
-            dict(vehicle_id=v9, date="2026-03-10", description="Suspension check",          cost=200,  technician="D. Kim",     odometer=197500, notes="Minor wear noted"),
-            dict(vehicle_id=v0, date="2025-11-05", description="Annual DOT inspection",     cost=350,  technician="A. Smith",   odometer=142000, notes="Passed"),
-            dict(vehicle_id=v1, date="2025-12-18", description="Oil change",                cost=175,  technician="B. Jones",   odometer=96000,  notes=""),
+            # type = short label used by the model (maps to frontend "type" field)
+            dict(vehicle_id=v0, date="2026-01-08", type="Oil change + filter",      cost=180,  tech="A. Smith",  mileage=144100, notes=""),
+            dict(vehicle_id=v0, date="2026-03-15", type="Brake pad replacement",    cost=620,  tech="A. Smith",  mileage=145230, notes="Front and rear"),
+            dict(vehicle_id=v1, date="2026-01-20", type="Tire rotation",            cost=95,   tech="B. Jones",  mileage=97800,  notes=""),
+            dict(vehicle_id=v1, date="2026-02-28", type="AC system service",        cost=340,  tech="B. Jones",  mileage=98450,  notes="Refrigerant recharge"),
+            dict(vehicle_id=v2, date="2026-01-10", type="Engine diagnostic",        cost=150,  tech="C. Rivera", mileage=209000, notes="Check engine light"),
+            dict(vehicle_id=v2, date="2026-02-05", type="Alternator replacement",   cost=850,  tech="C. Rivera", mileage=210000, notes="Original failed"),
+            dict(vehicle_id=v3, date="2026-02-12", type="Oil change",               cost=165,  tech="A. Smith",  mileage=67200,  notes=""),
+            dict(vehicle_id=v5, date="2026-01-25", type="Battery replacement",      cost=280,  tech="D. Kim",    mileage=33900,  notes="Cold weather failure"),
+            dict(vehicle_id=v6, date="2026-03-01", type="Oil change + tire rotate", cost=220,  tech="B. Jones",  mileage=78500,  notes=""),
+            dict(vehicle_id=v7, date="2026-01-15", type="Transmission service",     cost=490,  tech="C. Rivera", mileage=155200, notes="Fluid and filter"),
+            dict(vehicle_id=v8, date="2026-02-20", type="Brake inspection",         cost=120,  tech="A. Smith",  mileage=44800,  notes="All clear"),
+            dict(vehicle_id=v9, date="2026-03-10", type="Suspension check",         cost=200,  tech="D. Kim",    mileage=197500, notes="Minor wear noted"),
+            dict(vehicle_id=v0, date="2025-11-05", type="Annual DOT inspection",    cost=350,  tech="A. Smith",  mileage=142000, notes="Passed"),
+            dict(vehicle_id=v1, date="2025-12-18", type="Oil change",               cost=175,  tech="B. Jones",  mileage=96000,  notes=""),
         ]
         for m in MAINTENANCE:
             exists = db.query(MaintenanceEntry).filter_by(
-                company_id=cid, vehicle_id=m["vehicle_id"], date=m["date"], description=m["description"]
+                company_id=cid, vehicle_id=m["vehicle_id"], date=m["date"], type=m["type"]
             ).first()
             if not exists:
                 db.add(MaintenanceEntry(company_id=cid, **m))
 
         # ── Fuel Entries ──────────────────────────────────────
         FUEL = [
-            dict(vehicle_id=v0, date="2026-01-03",  gallons=45.2, cost_per_gallon=3.89, total=175.83, odometer=143200, driver_name="Michael Johnson",  notes=""),
-            dict(vehicle_id=v0, date="2026-01-17",  gallons=42.8, cost_per_gallon=3.92, total=167.78, odometer=143900, driver_name="Michael Johnson",  notes=""),
-            dict(vehicle_id=v0, date="2026-02-04",  gallons=44.1, cost_per_gallon=3.85, total=169.79, odometer=144600, driver_name="Michael Johnson",  notes=""),
-            dict(vehicle_id=v0, date="2026-03-01",  gallons=43.5, cost_per_gallon=3.88, total=168.78, odometer=145000, driver_name="Michael Johnson",  notes=""),
-            dict(vehicle_id=v1, date="2026-01-06",  gallons=38.4, cost_per_gallon=3.89, total=149.38, odometer=97200,  driver_name="Sarah Williams",   notes=""),
-            dict(vehicle_id=v1, date="2026-01-27",  gallons=40.1, cost_per_gallon=3.91, total=156.79, odometer=97900,  driver_name="Sarah Williams",   notes=""),
-            dict(vehicle_id=v1, date="2026-02-18",  gallons=39.2, cost_per_gallon=3.87, total=151.70, odometer=98300,  driver_name="Sarah Williams",   notes=""),
-            dict(vehicle_id=v2, date="2026-01-12",  gallons=52.0, cost_per_gallon=3.90, total=202.80, odometer=209500, driver_name="Robert Davis",    notes="In for repair"),
-            dict(vehicle_id=v3, date="2026-01-04",  gallons=41.5, cost_per_gallon=3.89, total=161.44, odometer=66800,  driver_name="Emily Chen",      notes=""),
-            dict(vehicle_id=v3, date="2026-01-21",  gallons=40.8, cost_per_gallon=3.92, total=159.94, odometer=67200,  driver_name="Emily Chen",      notes=""),
-            dict(vehicle_id=v3, date="2026-02-10",  gallons=42.3, cost_per_gallon=3.86, total=163.28, odometer=67600,  driver_name="Emily Chen",      notes=""),
-            dict(vehicle_id=v3, date="2026-03-05",  gallons=41.9, cost_per_gallon=3.91, total=163.83, odometer=67890,  driver_name="Emily Chen",      notes=""),
-            dict(vehicle_id=v5, date="2026-01-09",  gallons=35.6, cost_per_gallon=3.89, total=138.48, odometer=33700,  driver_name="Maria Garcia",    notes=""),
-            dict(vehicle_id=v5, date="2026-02-14",  gallons=34.9, cost_per_gallon=3.87, total=135.06, odometer=34000,  driver_name="Maria Garcia",    notes=""),
-            dict(vehicle_id=v6, date="2026-01-08",  gallons=37.2, cost_per_gallon=3.88, total=144.34, odometer=78100,  driver_name="David Martinez",  notes=""),
-            dict(vehicle_id=v6, date="2026-02-02",  gallons=36.8, cost_per_gallon=3.91, total=143.89, odometer=78500,  driver_name="David Martinez",  notes=""),
-            dict(vehicle_id=v6, date="2026-03-08",  gallons=38.1, cost_per_gallon=3.85, total=146.69, odometer=78800,  driver_name="David Martinez",  notes=""),
-            dict(vehicle_id=v7, date="2026-01-11",  gallons=43.7, cost_per_gallon=3.90, total=170.43, odometer=155600, driver_name="Lisa Anderson",   notes=""),
-            dict(vehicle_id=v7, date="2026-02-08",  gallons=44.2, cost_per_gallon=3.88, total=171.50, odometer=156100, driver_name="Lisa Anderson",   notes=""),
-            dict(vehicle_id=v7, date="2026-03-12",  gallons=43.1, cost_per_gallon=3.92, total=168.95, odometer=156780, driver_name="Lisa Anderson",   notes=""),
-            dict(vehicle_id=v8, date="2026-01-14",  gallons=36.5, cost_per_gallon=3.89, total=142.00, odometer=44400,  driver_name="Michael Johnson", notes=""),
-            dict(vehicle_id=v8, date="2026-02-22",  gallons=37.0, cost_per_gallon=3.86, total=142.82, odometer=44700,  driver_name="Michael Johnson", notes=""),
-            dict(vehicle_id=v9, date="2026-01-19",  gallons=48.3, cost_per_gallon=3.90, total=188.37, odometer=197200, driver_name="Robert Davis",    notes=""),
-            dict(vehicle_id=v9, date="2026-02-26",  gallons=47.8, cost_per_gallon=3.88, total=185.46, odometer=197800, driver_name="Robert Davis",    notes=""),
-            dict(vehicle_id=v9, date="2026-03-20",  gallons=49.1, cost_per_gallon=3.91, total=192.08, odometer=198340, driver_name="Robert Davis",    notes=""),
+            dict(vehicle_id=v0, date="2026-01-03",  gallons=45.2, cpg=3.89, total=175.83, odometer=143200, full=True),
+            dict(vehicle_id=v0, date="2026-01-17",  gallons=42.8, cpg=3.92, total=167.78, odometer=143900, full=True),
+            dict(vehicle_id=v0, date="2026-02-04",  gallons=44.1, cpg=3.85, total=169.79, odometer=144600, full=True),
+            dict(vehicle_id=v0, date="2026-03-01",  gallons=43.5, cpg=3.88, total=168.78, odometer=145000, full=True),
+            dict(vehicle_id=v1, date="2026-01-06",  gallons=38.4, cpg=3.89, total=149.38, odometer=97200,  full=True),
+            dict(vehicle_id=v1, date="2026-01-27",  gallons=40.1, cpg=3.91, total=156.79, odometer=97900,  full=True),
+            dict(vehicle_id=v1, date="2026-02-18",  gallons=39.2, cpg=3.87, total=151.70, odometer=98300,  full=True),
+            dict(vehicle_id=v2, date="2026-01-12",  gallons=52.0, cpg=3.90, total=202.80, odometer=209500, full=False),
+            dict(vehicle_id=v3, date="2026-01-04",  gallons=41.5, cpg=3.89, total=161.44, odometer=66800,  full=True),
+            dict(vehicle_id=v3, date="2026-01-21",  gallons=40.8, cpg=3.92, total=159.94, odometer=67200,  full=True),
+            dict(vehicle_id=v3, date="2026-02-10",  gallons=42.3, cpg=3.86, total=163.28, odometer=67600,  full=True),
+            dict(vehicle_id=v3, date="2026-03-05",  gallons=41.9, cpg=3.91, total=163.83, odometer=67890,  full=True),
+            dict(vehicle_id=v5, date="2026-01-09",  gallons=35.6, cpg=3.89, total=138.48, odometer=33700,  full=True),
+            dict(vehicle_id=v5, date="2026-02-14",  gallons=34.9, cpg=3.87, total=135.06, odometer=34000,  full=True),
+            dict(vehicle_id=v6, date="2026-01-08",  gallons=37.2, cpg=3.88, total=144.34, odometer=78100,  full=True),
+            dict(vehicle_id=v6, date="2026-02-02",  gallons=36.8, cpg=3.91, total=143.89, odometer=78500,  full=True),
+            dict(vehicle_id=v6, date="2026-03-08",  gallons=38.1, cpg=3.85, total=146.69, odometer=78800,  full=True),
+            dict(vehicle_id=v7, date="2026-01-11",  gallons=43.7, cpg=3.90, total=170.43, odometer=155600, full=True),
+            dict(vehicle_id=v7, date="2026-02-08",  gallons=44.2, cpg=3.88, total=171.50, odometer=156100, full=True),
+            dict(vehicle_id=v7, date="2026-03-12",  gallons=43.1, cpg=3.92, total=168.95, odometer=156780, full=True),
+            dict(vehicle_id=v8, date="2026-01-14",  gallons=36.5, cpg=3.89, total=142.00, odometer=44400,  full=True),
+            dict(vehicle_id=v8, date="2026-02-22",  gallons=37.0, cpg=3.86, total=142.82, odometer=44700,  full=True),
+            dict(vehicle_id=v9, date="2026-01-19",  gallons=48.3, cpg=3.90, total=188.37, odometer=197200, full=True),
+            dict(vehicle_id=v9, date="2026-02-26",  gallons=47.8, cpg=3.88, total=185.46, odometer=197800, full=True),
+            dict(vehicle_id=v9, date="2026-03-20",  gallons=49.1, cpg=3.91, total=192.08, odometer=198340, full=True),
             # Q4 2025
-            dict(vehicle_id=v0, date="2025-10-10",  gallons=44.5, cost_per_gallon=3.95, total=175.78, odometer=141000, driver_name="Michael Johnson", notes=""),
-            dict(vehicle_id=v0, date="2025-11-14",  gallons=43.8, cost_per_gallon=3.98, total=174.32, odometer=142000, driver_name="Michael Johnson", notes=""),
-            dict(vehicle_id=v0, date="2025-12-12",  gallons=42.9, cost_per_gallon=4.02, total=172.46, odometer=143000, driver_name="Michael Johnson", notes=""),
-            dict(vehicle_id=v1, date="2025-10-15",  gallons=39.6, cost_per_gallon=3.95, total=156.42, odometer=95000,  driver_name="Sarah Williams",  notes=""),
-            dict(vehicle_id=v1, date="2025-12-08",  gallons=40.5, cost_per_gallon=4.01, total=162.41, odometer=96500,  driver_name="Sarah Williams",  notes=""),
+            dict(vehicle_id=v0, date="2025-10-10",  gallons=44.5, cpg=3.95, total=175.78, odometer=141000, full=True),
+            dict(vehicle_id=v0, date="2025-11-14",  gallons=43.8, cpg=3.98, total=174.32, odometer=142000, full=True),
+            dict(vehicle_id=v0, date="2025-12-12",  gallons=42.9, cpg=4.02, total=172.46, odometer=143000, full=True),
+            dict(vehicle_id=v1, date="2025-10-15",  gallons=39.6, cpg=3.95, total=156.42, odometer=95000,  full=True),
+            dict(vehicle_id=v1, date="2025-12-08",  gallons=40.5, cpg=4.01, total=162.41, odometer=96500,  full=True),
         ]
         for f in FUEL:
             exists = db.query(FuelEntry).filter_by(
