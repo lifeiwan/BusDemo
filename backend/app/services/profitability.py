@@ -19,6 +19,7 @@ def _in_range(date_str: str, from_date: str, to_date: str) -> bool:
 
 
 def _active_jobs_in_range(jobs: list, from_date: str, to_date: str) -> list:
+    # Jobs are single-occurrence events; a job is "in range" if its start_date falls within [from_date, to_date].
     return [j for j in jobs if from_date <= j.start_date <= to_date]
 
 

@@ -51,6 +51,8 @@ def test_create_job_group(authed_client):
     assert body["recurrence"] == "weekly"
     assert body["default_revenue"] == 1500.0
     assert body["default_driver_payroll"] == 500.0
+    assert body["customer_id"] is None
+    assert body["vehicle_id"] is None
 
 
 def test_get_job_group(authed_client, group_id):
