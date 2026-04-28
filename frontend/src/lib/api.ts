@@ -44,7 +44,11 @@ export async function apiFetch<T>(
     },
   });
 
-  if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+  if (!res.ok) {
+    let msg = `${res.status} ${res.statusText}`;
+    try { const b = await res.json(); if (b.detail) msg += `: ${b.detail}`; } catch {}
+    throw new Error(msg);
+  }
   if (res.status === 204) return undefined as T;
 
   const data = await res.json();

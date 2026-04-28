@@ -1,5 +1,4 @@
 from datetime import datetime
-from decimal import Decimal
 from typing import Optional
 from pydantic import BaseModel, ConfigDict
 
@@ -33,9 +32,9 @@ class JobBase(BaseModel):
     vehicle_id: Optional[int] = None
     driver_id: Optional[int] = None
     customer_id: Optional[int] = None
-    revenue: Decimal = Decimal("0")
-    driver_payroll: Decimal = Decimal("0")
-    payments_received: Decimal = Decimal("0")
+    revenue: float = 0.0
+    driver_payroll: float = 0.0
+    payments_received: float = 0.0
     recurrence: str = "one_time"  # daily | weekly | monthly | one_time
     start_date: str
     end_date: Optional[str] = None
@@ -64,7 +63,7 @@ class JobLineItemBase(BaseModel):
     date: str
     category: str
     direction: str  # cost | income
-    amount: Decimal
+    amount: float
     notes: str = ""
 
 

@@ -113,9 +113,16 @@ def seed():
                 role = Role(company_id=cid, name=role_name)
                 db.add(role)
                 db.flush()
-                for perm in perms:
-                    db.add(RolePermission(role_id=role.id, permission_id=perm.id))
                 print(f"Created role: {role_name}")
+            # Always ensure the correct permissions are linked (idempotent upsert)
+            existing_perm_ids = {
+                rp.permission_id
+                for rp in db.query(RolePermission).filter_by(role_id=role.id).all()
+            }
+            for perm in perms:
+                if perm.id not in existing_perm_ids:
+                    db.add(RolePermission(role_id=role.id, permission_id=perm.id))
+                    print(f"  Linked permission ({perm.resource}, {perm.action}) to role {role_name}")
             role_map[role_name] = role
 
         # ── Customers ─────────────────────────────────────────

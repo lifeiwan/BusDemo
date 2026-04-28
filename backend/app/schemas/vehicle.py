@@ -1,5 +1,4 @@
 from datetime import datetime
-from decimal import Decimal
 from typing import Any, Optional
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -37,7 +36,7 @@ class VehicleRead(VehicleBase):
 class VehicleFixedCostBase(BaseModel):
     vehicle_id: int
     type: str  # loan | eld | management_fee
-    cost: Decimal
+    cost: float
     start_date: str  # YYYY-MM-DD
     notes: str = ""
 
@@ -65,7 +64,7 @@ class InsurancePolicyBase(BaseModel):
     vehicle_id: int
     provider: str = ""
     type: str  # monthly | yearly
-    cost: Decimal
+    cost: float
     start_date: str
     notes: str = ""
 
@@ -92,7 +91,7 @@ class InsurancePolicyRead(InsurancePolicyBase):
 class ParkingEntryBase(BaseModel):
     vehicle_id: int
     type: str  # monthly | one_time
-    cost: Decimal
+    cost: float
     start_date: Optional[str] = None
     date: Optional[str] = None
     location: str = ""
@@ -124,7 +123,7 @@ class MaintenanceEntryBase(BaseModel):
     date: str
     type: str
     mileage: int = 0
-    cost: Decimal
+    cost: float
     tech: str = ""
     notes: str = ""
 
@@ -151,9 +150,9 @@ class MaintenanceEntryRead(MaintenanceEntryBase):
 class FuelEntryBase(BaseModel):
     vehicle_id: int
     date: str
-    gallons: Decimal
-    cpg: Decimal
-    total: Decimal
+    gallons: float
+    cpg: float
+    total: float
     odometer: int = 0
     full: bool = False
 

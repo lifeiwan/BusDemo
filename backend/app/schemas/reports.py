@@ -1,21 +1,20 @@
-from decimal import Decimal
 from typing import Optional
 from pydantic import BaseModel
 
 
 class PLMonthData(BaseModel):
-    revenue: Decimal
-    driver_payroll: Decimal
-    fuel: Decimal
-    maintenance: Decimal
-    insurance: Decimal
-    loan: Decimal
-    eld: Decimal
-    management_fee: Decimal
-    parking: Decimal
-    ez_pass: Decimal
-    other_cogs: Decimal
-    ga: dict[str, Decimal]  # category -> amount
+    revenue: float
+    driver_payroll: float
+    fuel: float
+    maintenance: float
+    insurance: float
+    loan: float
+    eld: float
+    management_fee: float
+    parking: float
+    ez_pass: float
+    other_cogs: float
+    ga: dict[str, float]  # category -> amount
 
 
 class PLReport(BaseModel):
@@ -26,42 +25,42 @@ class PLReport(BaseModel):
 class VehicleRow(BaseModel):
     vehicle_id: int
     label: str
-    revenue: Decimal
-    payroll: Decimal
-    fuel: Decimal
-    repair: Decimal
-    others: Decimal
-    ez_pass: Decimal
-    insurance: Decimal
-    management_fee: Decimal
-    loan: Decimal
-    parking: Decimal
-    eld: Decimal
-    net: Decimal
+    revenue: float
+    payroll: float
+    fuel: float
+    repair: float
+    others: float
+    ez_pass: float
+    insurance: float
+    management_fee: float
+    loan: float
+    parking: float
+    eld: float
+    net: float
 
 
 class JobGroupRow(BaseModel):
     job_group_id: int
     label: str
-    revenue: Decimal
-    payroll: Decimal
-    fuel: Decimal
-    repair: Decimal
-    others: Decimal
-    ez_pass: Decimal
-    insurance: Decimal
-    management_fee: Decimal
-    loan: Decimal
-    parking: Decimal
-    eld: Decimal
-    net: Decimal
+    revenue: float
+    payroll: float
+    fuel: float
+    repair: float
+    others: float
+    ez_pass: float
+    insurance: float
+    management_fee: float
+    loan: float
+    parking: float
+    eld: float
+    net: float
 
 
 class ProfitRow(BaseModel):
     id: int
     label: str
-    revenue: Decimal
-    costs: Decimal
-    net_profit: Decimal
+    revenue: float
+    costs: float
+    net_profit: float
     margin: float
-    accounts_receivable: Optional[Decimal] = None
+    accounts_receivable: Optional[float] = None

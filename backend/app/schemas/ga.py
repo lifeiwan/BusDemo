@@ -1,12 +1,11 @@
 from datetime import datetime
-from decimal import Decimal
 from pydantic import BaseModel, ConfigDict
 
 
 class GaEntryBase(BaseModel):
     category: str
     date: str  # YYYY-MM-DD
-    amount: Decimal
+    amount: float
     notes: str = ""
 
 

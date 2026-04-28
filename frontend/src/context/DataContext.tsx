@@ -63,6 +63,17 @@ const DataContext = createContext<DataContextValue | null>(null);
 export function DataProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [mutationError, setMutationError] = useState<string | null>(null);
+
+  async function run<T>(fn: () => Promise<T>, onSuccess: (result: T) => void): Promise<void> {
+    try {
+      const result = await fn();
+      onSuccess(result);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Operation failed';
+      setMutationError(msg);
+    }
+  }
 
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [drivers, setDrivers] = useState<Driver[]>([]);
@@ -131,166 +142,183 @@ export function DataProvider({ children }: { children: ReactNode }) {
     driverVehicleAssignments,
 
     // Vehicles
-    addVehicle: async (v) => {
-      const created = await apiFetch<Vehicle>('/api/v1/vehicles/', { method: 'POST', body: JSON.stringify(v) });
-      setVehicles(prev => [...prev, created]);
-    },
-    updateVehicle: async (v) => {
-      const updated = await apiFetch<Vehicle>(`/api/v1/vehicles/${v.id}`, { method: 'PUT', body: JSON.stringify(v) });
-      setVehicles(prev => prev.map(x => x.id === v.id ? updated : x));
-    },
-    deleteVehicle: async (id) => {
-      await apiFetch(`/api/v1/vehicles/${id}`, { method: 'DELETE' });
-      setVehicles(prev => prev.filter(x => x.id !== id));
-    },
+    addVehicle: async (v) => run(
+      () => apiFetch<Vehicle>('/api/v1/vehicles/', { method: 'POST', body: JSON.stringify(v) }),
+      (c) => setVehicles(prev => [...prev, c])
+    ),
+    updateVehicle: async (v) => run(
+      () => apiFetch<Vehicle>(`/api/v1/vehicles/${v.id}`, { method: 'PUT', body: JSON.stringify(v) }),
+      (u) => setVehicles(prev => prev.map(x => x.id === v.id ? u : x))
+    ),
+    deleteVehicle: async (id) => run(
+      () => apiFetch(`/api/v1/vehicles/${id}`, { method: 'DELETE' }),
+      () => setVehicles(prev => prev.filter(x => x.id !== id))
+    ),
 
     // Drivers
-    addDriver: async (d) => {
-      const created = await apiFetch<Driver>('/api/v1/drivers/', { method: 'POST', body: JSON.stringify(d) });
-      setDrivers(prev => [...prev, created]);
-    },
-    updateDriver: async (d) => {
-      const updated = await apiFetch<Driver>(`/api/v1/drivers/${d.id}`, { method: 'PUT', body: JSON.stringify(d) });
-      setDrivers(prev => prev.map(x => x.id === d.id ? updated : x));
-    },
-    deleteDriver: async (id) => {
-      await apiFetch(`/api/v1/drivers/${id}`, { method: 'DELETE' });
-      setDrivers(prev => prev.filter(x => x.id !== id));
-    },
+    addDriver: async (d) => run(
+      () => apiFetch<Driver>('/api/v1/drivers/', { method: 'POST', body: JSON.stringify(d) }),
+      (c) => setDrivers(prev => [...prev, c])
+    ),
+    updateDriver: async (d) => run(
+      () => apiFetch<Driver>(`/api/v1/drivers/${d.id}`, { method: 'PUT', body: JSON.stringify(d) }),
+      (u) => setDrivers(prev => prev.map(x => x.id === d.id ? u : x))
+    ),
+    deleteDriver: async (id) => run(
+      () => apiFetch(`/api/v1/drivers/${id}`, { method: 'DELETE' }),
+      () => setDrivers(prev => prev.filter(x => x.id !== id))
+    ),
 
     // Customers
-    addCustomer: async (c) => {
-      const created = await apiFetch<Customer>('/api/v1/customers/', { method: 'POST', body: JSON.stringify(c) });
-      setCustomers(prev => [...prev, created]);
-    },
-    updateCustomer: async (c) => {
-      const updated = await apiFetch<Customer>(`/api/v1/customers/${c.id}`, { method: 'PUT', body: JSON.stringify(c) });
-      setCustomers(prev => prev.map(x => x.id === c.id ? updated : x));
-    },
-    deleteCustomer: async (id) => {
-      await apiFetch(`/api/v1/customers/${id}`, { method: 'DELETE' });
-      setCustomers(prev => prev.filter(x => x.id !== id));
-    },
+    addCustomer: async (c) => run(
+      () => apiFetch<Customer>('/api/v1/customers/', { method: 'POST', body: JSON.stringify(c) }),
+      (created) => setCustomers(prev => [...prev, created])
+    ),
+    updateCustomer: async (c) => run(
+      () => apiFetch<Customer>(`/api/v1/customers/${c.id}`, { method: 'PUT', body: JSON.stringify(c) }),
+      (u) => setCustomers(prev => prev.map(x => x.id === c.id ? u : x))
+    ),
+    deleteCustomer: async (id) => run(
+      () => apiFetch(`/api/v1/customers/${id}`, { method: 'DELETE' }),
+      () => setCustomers(prev => prev.filter(x => x.id !== id))
+    ),
 
     // Job Groups
-    addJobGroup: async (jg) => {
-      const created = await apiFetch<JobGroup>('/api/v1/job-groups/', { method: 'POST', body: JSON.stringify(jg) });
-      setJobGroups(prev => [...prev, created]);
-    },
-    updateJobGroup: async (jg) => {
-      const updated = await apiFetch<JobGroup>(`/api/v1/job-groups/${jg.id}`, { method: 'PUT', body: JSON.stringify(jg) });
-      setJobGroups(prev => prev.map(x => x.id === jg.id ? updated : x));
-    },
-    deleteJobGroup: async (id) => {
-      await apiFetch(`/api/v1/job-groups/${id}`, { method: 'DELETE' });
-      setJobGroups(prev => prev.filter(x => x.id !== id));
-    },
+    addJobGroup: async (jg) => run(
+      () => apiFetch<JobGroup>('/api/v1/job-groups/', { method: 'POST', body: JSON.stringify(jg) }),
+      (c) => setJobGroups(prev => [...prev, c])
+    ),
+    updateJobGroup: async (jg) => run(
+      () => apiFetch<JobGroup>(`/api/v1/job-groups/${jg.id}`, { method: 'PUT', body: JSON.stringify(jg) }),
+      (u) => setJobGroups(prev => prev.map(x => x.id === jg.id ? u : x))
+    ),
+    deleteJobGroup: async (id) => run(
+      () => apiFetch(`/api/v1/job-groups/${id}`, { method: 'DELETE' }),
+      () => setJobGroups(prev => prev.filter(x => x.id !== id))
+    ),
 
     // Jobs
-    addJob: async (j) => {
-      const created = await apiFetch<Job>('/api/v1/jobs/', { method: 'POST', body: JSON.stringify(j) });
-      setJobs(prev => [...prev, created]);
-    },
-    updateJob: async (j) => {
-      const updated = await apiFetch<Job>(`/api/v1/jobs/${j.id}`, { method: 'PUT', body: JSON.stringify(j) });
-      setJobs(prev => prev.map(x => x.id === j.id ? updated : x));
-    },
-    deleteJob: async (id) => {
-      await apiFetch(`/api/v1/jobs/${id}`, { method: 'DELETE' });
-      setJobs(prev => prev.filter(x => x.id !== id));
-    },
+    addJob: async (j) => run(
+      () => apiFetch<Job>('/api/v1/jobs/', { method: 'POST', body: JSON.stringify(j) }),
+      (c) => setJobs(prev => [...prev, c])
+    ),
+    updateJob: async (j) => run(
+      () => apiFetch<Job>(`/api/v1/jobs/${j.id}`, { method: 'PUT', body: JSON.stringify(j) }),
+      (u) => setJobs(prev => prev.map(x => x.id === j.id ? u : x))
+    ),
+    deleteJob: async (id) => run(
+      () => apiFetch(`/api/v1/jobs/${id}`, { method: 'DELETE' }),
+      () => setJobs(prev => prev.filter(x => x.id !== id))
+    ),
 
     // Job Line Items
-    addJobLineItem: async (li) => {
-      const created = await apiFetch<JobLineItem>('/api/v1/job-line-items/', { method: 'POST', body: JSON.stringify(li) });
-      setJobLineItems(prev => [...prev, created]);
-    },
-    updateJobLineItem: async (li) => {
-      const updated = await apiFetch<JobLineItem>(`/api/v1/job-line-items/${li.id}`, { method: 'PUT', body: JSON.stringify(li) });
-      setJobLineItems(prev => prev.map(x => x.id === li.id ? updated : x));
-    },
-    deleteJobLineItem: async (id) => {
-      await apiFetch(`/api/v1/job-line-items/${id}`, { method: 'DELETE' });
-      setJobLineItems(prev => prev.filter(x => x.id !== id));
-    },
+    addJobLineItem: async (li) => run(
+      () => apiFetch<JobLineItem>('/api/v1/job-line-items/', { method: 'POST', body: JSON.stringify(li) }),
+      (c) => setJobLineItems(prev => [...prev, c])
+    ),
+    updateJobLineItem: async (li) => run(
+      () => apiFetch<JobLineItem>(`/api/v1/job-line-items/${li.id}`, { method: 'PUT', body: JSON.stringify(li) }),
+      (u) => setJobLineItems(prev => prev.map(x => x.id === li.id ? u : x))
+    ),
+    deleteJobLineItem: async (id) => run(
+      () => apiFetch(`/api/v1/job-line-items/${id}`, { method: 'DELETE' }),
+      () => setJobLineItems(prev => prev.filter(x => x.id !== id))
+    ),
     deleteJobLineItemsByJobId: async (jobId) => {
       const toDelete = jobLineItems.filter(li => li.jobId === jobId);
-      await Promise.all(toDelete.map(li => apiFetch(`/api/v1/job-line-items/${li.id}`, { method: 'DELETE' })));
-      setJobLineItems(prev => prev.filter(x => x.jobId !== jobId));
+      await run(
+        () => Promise.all(toDelete.map(li => apiFetch(`/api/v1/job-line-items/${li.id}`, { method: 'DELETE' }))),
+        () => setJobLineItems(prev => prev.filter(x => x.jobId !== jobId))
+      );
     },
 
     // Maintenance
-    addMaintenance: async (e) => {
-      const created = await apiFetch<MaintenanceEntry>('/api/v1/maintenance/', { method: 'POST', body: JSON.stringify(e) });
-      setMaintenance(prev => [...prev, created]);
-    },
-    updateMaintenance: async (e) => {
-      const updated = await apiFetch<MaintenanceEntry>(`/api/v1/maintenance/${e.id}`, { method: 'PUT', body: JSON.stringify(e) });
-      setMaintenance(prev => prev.map(x => x.id === e.id ? updated : x));
-    },
-    deleteMaintenance: async (id) => {
-      await apiFetch(`/api/v1/maintenance/${id}`, { method: 'DELETE' });
-      setMaintenance(prev => prev.filter(x => x.id !== id));
-    },
+    addMaintenance: async (e) => run(
+      () => apiFetch<MaintenanceEntry>('/api/v1/maintenance/', { method: 'POST', body: JSON.stringify(e) }),
+      (c) => setMaintenance(prev => [...prev, c])
+    ),
+    updateMaintenance: async (e) => run(
+      () => apiFetch<MaintenanceEntry>(`/api/v1/maintenance/${e.id}`, { method: 'PUT', body: JSON.stringify(e) }),
+      (u) => setMaintenance(prev => prev.map(x => x.id === e.id ? u : x))
+    ),
+    deleteMaintenance: async (id) => run(
+      () => apiFetch(`/api/v1/maintenance/${id}`, { method: 'DELETE' }),
+      () => setMaintenance(prev => prev.filter(x => x.id !== id))
+    ),
 
     // Fuel
-    addFuel: async (e) => {
-      const created = await apiFetch<FuelEntry>('/api/v1/fuel/', { method: 'POST', body: JSON.stringify(e) });
-      setFuel(prev => [...prev, created]);
-    },
-    updateFuel: async (e) => {
-      const updated = await apiFetch<FuelEntry>(`/api/v1/fuel/${e.id}`, { method: 'PUT', body: JSON.stringify(e) });
-      setFuel(prev => prev.map(x => x.id === e.id ? updated : x));
-    },
-    deleteFuel: async (id) => {
-      await apiFetch(`/api/v1/fuel/${id}`, { method: 'DELETE' });
-      setFuel(prev => prev.filter(x => x.id !== id));
-    },
+    addFuel: async (e) => run(
+      () => apiFetch<FuelEntry>('/api/v1/fuel/', { method: 'POST', body: JSON.stringify(e) }),
+      (c) => setFuel(prev => [...prev, c])
+    ),
+    updateFuel: async (e) => run(
+      () => apiFetch<FuelEntry>(`/api/v1/fuel/${e.id}`, { method: 'PUT', body: JSON.stringify(e) }),
+      (u) => setFuel(prev => prev.map(x => x.id === e.id ? u : x))
+    ),
+    deleteFuel: async (id) => run(
+      () => apiFetch(`/api/v1/fuel/${id}`, { method: 'DELETE' }),
+      () => setFuel(prev => prev.filter(x => x.id !== id))
+    ),
 
     // Inspections
-    addInspection: async (e) => {
-      const created = await apiFetch<Inspection>('/api/v1/inspections/', { method: 'POST', body: JSON.stringify(e) });
-      setInspections(prev => [...prev, created]);
-    },
-    updateInspection: async (e) => {
-      const updated = await apiFetch<Inspection>(`/api/v1/inspections/${e.id}`, { method: 'PUT', body: JSON.stringify(e) });
-      setInspections(prev => prev.map(x => x.id === e.id ? updated : x));
-    },
-    deleteInspection: async (id) => {
-      await apiFetch(`/api/v1/inspections/${id}`, { method: 'DELETE' });
-      setInspections(prev => prev.filter(x => x.id !== id));
-    },
+    addInspection: async (e) => run(
+      () => apiFetch<Inspection>('/api/v1/inspections/', { method: 'POST', body: JSON.stringify(e) }),
+      (c) => setInspections(prev => [...prev, c])
+    ),
+    updateInspection: async (e) => run(
+      () => apiFetch<Inspection>(`/api/v1/inspections/${e.id}`, { method: 'PUT', body: JSON.stringify(e) }),
+      (u) => setInspections(prev => prev.map(x => x.id === e.id ? u : x))
+    ),
+    deleteInspection: async (id) => run(
+      () => apiFetch(`/api/v1/inspections/${id}`, { method: 'DELETE' }),
+      () => setInspections(prev => prev.filter(x => x.id !== id))
+    ),
 
     // G&A Entries
-    addGaEntry: async (e) => {
-      const created = await apiFetch<GaEntry>('/api/v1/ga-entries/', { method: 'POST', body: JSON.stringify(e) });
-      setGaEntries(prev => [...prev, created]);
-    },
-    updateGaEntry: async (e) => {
-      const updated = await apiFetch<GaEntry>(`/api/v1/ga-entries/${e.id}`, { method: 'PUT', body: JSON.stringify(e) });
-      setGaEntries(prev => prev.map(x => x.id === e.id ? updated : x));
-    },
-    deleteGaEntry: async (id) => {
-      await apiFetch(`/api/v1/ga-entries/${id}`, { method: 'DELETE' });
-      setGaEntries(prev => prev.filter(x => x.id !== id));
-    },
+    addGaEntry: async (e) => run(
+      () => apiFetch<GaEntry>('/api/v1/ga-entries/', { method: 'POST', body: JSON.stringify(e) }),
+      (c) => setGaEntries(prev => [...prev, c])
+    ),
+    updateGaEntry: async (e) => run(
+      () => apiFetch<GaEntry>(`/api/v1/ga-entries/${e.id}`, { method: 'PUT', body: JSON.stringify(e) }),
+      (u) => setGaEntries(prev => prev.map(x => x.id === e.id ? u : x))
+    ),
+    deleteGaEntry: async (id) => run(
+      () => apiFetch(`/api/v1/ga-entries/${id}`, { method: 'DELETE' }),
+      () => setGaEntries(prev => prev.filter(x => x.id !== id))
+    ),
 
     // Vehicle Fixed Costs
-    addVehicleFixedCost: async (e) => {
-      const created = await apiFetch<VehicleFixedCost>('/api/v1/vehicle-fixed-costs/', { method: 'POST', body: JSON.stringify(e) });
-      setVehicleFixedCosts(prev => [...prev, created]);
-    },
-    updateVehicleFixedCost: async (e) => {
-      const updated = await apiFetch<VehicleFixedCost>(`/api/v1/vehicle-fixed-costs/${e.id}`, { method: 'PUT', body: JSON.stringify(e) });
-      setVehicleFixedCosts(prev => prev.map(x => x.id === e.id ? updated : x));
-    },
-    deleteVehicleFixedCost: async (id) => {
-      await apiFetch(`/api/v1/vehicle-fixed-costs/${id}`, { method: 'DELETE' });
-      setVehicleFixedCosts(prev => prev.filter(x => x.id !== id));
-    },
+    addVehicleFixedCost: async (e) => run(
+      () => apiFetch<VehicleFixedCost>('/api/v1/vehicle-fixed-costs/', { method: 'POST', body: JSON.stringify(e) }),
+      (c) => setVehicleFixedCosts(prev => [...prev, c])
+    ),
+    updateVehicleFixedCost: async (e) => run(
+      () => apiFetch<VehicleFixedCost>(`/api/v1/vehicle-fixed-costs/${e.id}`, { method: 'PUT', body: JSON.stringify(e) }),
+      (u) => setVehicleFixedCosts(prev => prev.map(x => x.id === e.id ? u : x))
+    ),
+    deleteVehicleFixedCost: async (id) => run(
+      () => apiFetch(`/api/v1/vehicle-fixed-costs/${id}`, { method: 'DELETE' }),
+      () => setVehicleFixedCosts(prev => prev.filter(x => x.id !== id))
+    ),
   };
 
-  return <DataContext.Provider value={value}>{children}</DataContext.Provider>;
+  return (
+    <DataContext.Provider value={value}>
+      {children}
+      {mutationError && (
+        <div className="fixed bottom-4 right-4 z-50 bg-red-600 text-white px-4 py-3 rounded-lg shadow-xl flex items-center gap-3 max-w-sm">
+          <span className="text-sm flex-1">{mutationError}</span>
+          <button
+            onClick={() => setMutationError(null)}
+            className="text-red-200 hover:text-white text-lg leading-none"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+    </DataContext.Provider>
+  );
 }
 
 export function useData(): DataContextValue {

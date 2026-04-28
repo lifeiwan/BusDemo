@@ -97,7 +97,7 @@ export interface Inspection {
   date: string;
   driverName: string;
   results: Record<string, 'pass' | 'fail'>;
-  pass: boolean;
+  passed: boolean;
   notes: string;
 }
 

@@ -1,5 +1,4 @@
 from datetime import datetime
-from decimal import Decimal
 from typing import Optional
 from pydantic import BaseModel, ConfigDict
 
@@ -58,7 +57,7 @@ class DriverCostBase(BaseModel):
     job_id: Optional[int] = None
     date: str
     type: str  # salary | bonus | reimbursement | other
-    amount: Decimal
+    amount: float
     notes: str = ""
 
 

@@ -316,6 +316,151 @@ After first deploy, add the Firebase Hosting domain to Firebase console:
 
 ---
 
+---
+
+## Section 7: Admin Bootstrap
+
+The seed script (`seed/seed.py`) already creates the company, roles (admin/investor/manager/staff), and permissions — but no User records. A separate bootstrap script creates the initial admin user.
+
+### `backend/seed/bootstrap_admin.py`
+
+Takes `ADMIN_FIREBASE_UID` and `ADMIN_EMAIL` from environment variables:
+
+```python
+"""
+Bootstrap the initial admin user.
+Run once after the first migration + seed.
+
+Usage (locally):
+  DATABASE_URL=... ADMIN_FIREBASE_UID=xxx ADMIN_EMAIL=you@example.com python -m seed.bootstrap_admin
+
+Usage (Cloud Run job):
+  gcloud run jobs execute superbus-bootstrap --region=us-central1 --wait \
+    --update-env-vars ADMIN_FIREBASE_UID=xxx,ADMIN_EMAIL=you@example.com
+"""
+import os, sys
+sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+
+from sqlalchemy import create_engine
+from sqlalchemy.orm import Session
+from app.models.company import Company
+from app.models.user import Role, User
+
+engine = create_engine(os.environ["DATABASE_URL"])
+
+def bootstrap():
+    uid   = os.environ["ADMIN_FIREBASE_UID"]
+    email = os.environ["ADMIN_EMAIL"]
+
+    with Session(engine) as db:
+        company = db.query(Company).first()
+        if not company:
+            raise RuntimeError("Run seed.py first — no company found.")
+
+        role = db.query(Role).filter_by(company_id=company.id, name="admin").first()
+        if not role:
+            raise RuntimeError("Run seed.py first — admin role not found.")
+
+        existing = db.query(User).filter_by(firebase_uid=uid).first()
+        if existing:
+            print(f"Admin user already exists (id={existing.id})")
+            return
+
+        user = User(
+            company_id=company.id,
+            role_id=role.id,
+            firebase_uid=uid,
+            email=email,
+        )
+        db.add(user)
+        db.commit()
+        print(f"Created admin user: {email} (firebase_uid={uid})")
+
+if __name__ == "__main__":
+    bootstrap()
+```
+
+### How to get the Firebase UID
+
+1. Firebase console → Authentication → Users → create the admin user (enter email, set a password)
+2. Click the user row — the UID is shown in the side panel (looks like `abc123xyz...`)
+3. Use that UID when running the bootstrap job
+
+### Bootstrap Cloud Run job
+
+Create a one-off Cloud Run job `superbus-bootstrap` that runs the bootstrap script:
+
+```bash
+gcloud run jobs create superbus-bootstrap \
+  --image=us-central1-docker.pkg.dev/project-4492076b-e4a4-4a4b-b5a/superbus/api:latest \
+  --region=us-central1 \
+  --service-account=superbus-api-sa@project-4492076b-e4a4-4a4b-b5a.iam.gserviceaccount.com \
+  --set-cloudsql-instances=project-4492076b-e4a4-4a4b-b5a:us-central1:superbus-db \
+  --set-secrets=DATABASE_URL=superbus-database-url:latest \
+  --set-env-vars=FIREBASE_CREDENTIALS_PATH="" \
+  --command=python \
+  --args=-m,seed.bootstrap_admin \
+  --max-retries=1
+```
+
+Run it with the admin's Firebase UID:
+
+```bash
+gcloud run jobs execute superbus-bootstrap \
+  --region=us-central1 \
+  --wait \
+  --update-env-vars="ADMIN_FIREBASE_UID=<uid>,ADMIN_EMAIL=<email>"
+```
+
+Also run the data seed job once to populate initial data:
+
+```bash
+gcloud run jobs create superbus-seed \
+  --image=us-central1-docker.pkg.dev/project-4492076b-e4a4-4a4b-b5a/superbus/api:latest \
+  --region=us-central1 \
+  --service-account=superbus-api-sa@project-4492076b-e4a4-4a4b-b5a.iam.gserviceaccount.com \
+  --set-cloudsql-instances=project-4492076b-e4a4-4a4b-b5a:us-central1:superbus-db \
+  --set-secrets=DATABASE_URL=superbus-database-url:latest \
+  --set-env-vars=FIREBASE_CREDENTIALS_PATH="" \
+  --command=python \
+  --args=-m,seed.seed \
+  --max-retries=1
+
+gcloud run jobs execute superbus-seed --region=us-central1 --wait
+```
+
+---
+
+## Section 8: User Management (Ongoing)
+
+After the admin is set up, all new user management happens through the app's existing Users page (`/users`).
+
+### Flow for adding a new user
+
+1. **Admin creates the Firebase account:** Firebase console → Authentication → Add user (enter email + temporary password) → copy the UID
+2. **Firebase sends the password-set email:** In Firebase console, click the user → "Send password reset email" → user sets their own password
+3. **Admin creates the database record:** In the app → Users page → Add User → enter email, Firebase UID, select role → Save
+4. **User can now log in** with full permissions matching their role
+
+### Roles available
+
+| Role | Permissions |
+|---|---|
+| `admin` | All permissions including user management |
+| `manager` | Operations, master data, vehicle ops, G&A, profit, reports (read+write) |
+| `investor` | Operations, master data, vehicle ops, G&A, profit, reports (read only) |
+| `staff` | Operations, master data, vehicle ops, G&A (read+write) |
+
+### Users page requirements
+
+The existing `/users` route needs to be connected to the API (same as all other pages). It calls:
+- `GET /api/v1/users/` — list users
+- `POST /api/v1/users/` — create user (body: `{ firebase_uid, email, role_id }`)
+- `PUT /api/v1/users/{id}` — update role
+- `DELETE /api/v1/users/{id}` — remove user
+
+---
+
 ## Out of Scope
 
 - Google Sign-In or other auth providers

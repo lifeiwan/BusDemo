@@ -1,8 +1,11 @@
 import firebase_admin
 from firebase_admin import credentials
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy.orm import Session
 from app.config import settings
+from app.database import get_db
+from app.middleware.auth import get_current_user
 from app.routers import vehicles as vehicles_router
 from app.routers import vehicle_ops as vehicle_ops_router
 from app.routers import drivers as drivers_router
@@ -34,6 +37,28 @@ app.add_middleware(
 @app.get("/health")
 def health() -> dict:
     return {"status": "ok"}
+
+
+@app.get("/debug/me")
+def debug_me(
+    current_user=Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    from app.models.user import Permission, RolePermission
+    perms = (
+        db.query(Permission)
+        .join(RolePermission, Permission.id == RolePermission.permission_id)
+        .filter(RolePermission.role_id == current_user.role_id)
+        .all()
+    )
+    return {
+        "user_id": current_user.id,
+        "firebase_uid": current_user.firebase_uid,
+        "email": current_user.email,
+        "role_id": current_user.role_id,
+        "is_active": current_user.is_active,
+        "permissions": sorted([(p.resource, p.action) for p in perms]),
+    }
 
 
 app.include_router(vehicles_router.router, prefix="/api/v1")

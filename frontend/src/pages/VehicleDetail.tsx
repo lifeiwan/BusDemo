@@ -31,7 +31,7 @@ const blankFixedCost = (): FixedCostForm => ({
 
 const blankMaint = (today: string): MaintForm => ({ date: today, type: '', mileage: 0, cost: 0, tech: '', notes: '' });
 const blankFuel = (today: string): FuelForm => ({ date: today, gallons: 0, cpg: 0, total: 0, odometer: 0, full: true });
-const blankInsp = (today: string): InspForm => ({ date: today, driverName: '', results: {}, pass: true, notes: '' });
+const blankInsp = (today: string): InspForm => ({ date: today, driverName: '', results: {}, passed: true, notes: '' });
 
 export default function VehicleDetail() {
   const { id } = useParams();
@@ -124,7 +124,7 @@ export default function VehicleDetail() {
   // Inspection CRUD
   function openAddInsp() { setInspForm(blankInsp(today)); setInspModal({ open: true, editing: null }); }
   function openEditInsp(e: Inspection) {
-    setInspForm({ date: e.date, driverName: e.driverName, results: e.results, pass: e.pass, notes: e.notes });
+    setInspForm({ date: e.date, driverName: e.driverName, results: e.results, passed: e.passed, notes: e.notes });
     setInspModal({ open: true, editing: e });
   }
   function saveInsp() {
@@ -158,7 +158,7 @@ export default function VehicleDetail() {
   const setF = (field: keyof FuelForm) => (ev: React.ChangeEvent<HTMLInputElement>) =>
     setFuelForm(f => ({ ...f, [field]: field === 'full' ? (ev.target as HTMLInputElement).checked : ev.target.value }));
   const setI = (field: keyof InspForm) => (ev: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
-    setInspForm(f => ({ ...f, [field]: field === 'pass' ? ev.target.value === 'true' : ev.target.value }));
+    setInspForm(f => ({ ...f, [field]: field === 'passed' ? ev.target.value === 'true' : ev.target.value }));
   const setFx = (field: keyof FixedCostForm) => (ev: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
     setFixedForm(f => ({ ...f, [field]: ev.target.value }));
 
@@ -302,7 +302,7 @@ export default function VehicleDetail() {
                   <tr key={e.id} className="border-b border-slate-100 hover:bg-slate-50">
                     <td className="px-4 py-3 text-slate-600">{e.date}</td>
                     <td className="px-4 py-3">{e.driverName}</td>
-                    <td className="px-4 py-3"><Badge value={e.pass ? 'pass' : 'fail'} /></td>
+                    <td className="px-4 py-3"><Badge value={e.passed ? 'pass' : 'fail'} /></td>
                     <td className="px-4 py-3 text-slate-500">{e.notes || '—'}</td>
                     <td className="px-4 py-3">
                       <div className="flex gap-1">
@@ -484,7 +484,7 @@ export default function VehicleDetail() {
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Result</label>
-              <select value={String(inspForm.pass)} onChange={setI('pass')}
+              <select value={String(inspForm.passed)} onChange={setI('passed')}
                 className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                 <option value="true">Pass</option>
                 <option value="false">Fail</option>
