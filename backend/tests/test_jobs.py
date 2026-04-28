@@ -4,12 +4,21 @@ BASE_GROUPS = "/api/v1/job-groups"
 BASE_JOBS = "/api/v1/jobs"
 BASE_ITEMS = "/api/v1/job-line-items"
 
-GROUP_PAYLOAD = {"name": "Airport Routes", "type": "route", "description": "Daily airport runs"}
+GROUP_PAYLOAD = {
+    "name": "Airport Routes",
+    "type": "route",
+    "description": "Daily airport runs",
+    "recurrence": "weekly",
+    "default_revenue": 1500.0,
+    "default_driver_payroll": 500.0,
+    "customer_id": None,
+    "vehicle_id": None,
+}
 JOB_PAYLOAD_TEMPLATE = {
     "name": "JFK Morning",
-    "revenue": "5000.00",
-    "driver_payroll": "1500.00",
-    "payments_received": "5000.00",
+    "revenue": 5000.00,
+    "driver_payroll": 1500.00,
+    "payments_received": 5000.00,
     "start_date": "2024-01-01",
     "status": "active",
 }
@@ -37,7 +46,11 @@ def test_list_job_groups_empty(authed_client):
 def test_create_job_group(authed_client):
     r = authed_client.post(BASE_GROUPS, json=GROUP_PAYLOAD)
     assert r.status_code == 201
-    assert r.json()["name"] == "Airport Routes"
+    body = r.json()
+    assert body["name"] == "Airport Routes"
+    assert body["recurrence"] == "weekly"
+    assert body["default_revenue"] == 1500.0
+    assert body["default_driver_payroll"] == 500.0
 
 
 def test_get_job_group(authed_client, group_id):
@@ -62,19 +75,6 @@ def test_delete_job_group(authed_client, group_id):
     assert authed_client.get(f"{BASE_GROUPS}/{group_id}").status_code == 404
 
 
-def test_job_group_template_fields(authed_client):
-    payload = {
-        "name": "School Route A", "type": "route", "description": "",
-        "recurrence": "weekly", "default_revenue": 1500.0, "default_driver_payroll": 500.0,
-        "customer_id": None, "vehicle_id": None,
-    }
-    r = authed_client.post(BASE_GROUPS, json=payload)
-    assert r.status_code == 201
-    body = r.json()
-    assert body["recurrence"] == "weekly"
-    assert body["default_revenue"] == 1500.0
-    assert body["default_driver_payroll"] == 500.0
-
 
 # ── Jobs ──────────────────────────────────────────────────────────────────────
 
@@ -89,6 +89,16 @@ def test_create_job(authed_client, group_id):
     r = authed_client.post(BASE_JOBS, json=payload)
     assert r.status_code == 201
     assert r.json()["name"] == "JFK Morning"
+
+
+def test_job_has_no_recurrence_or_end_date(authed_client, group_id):
+    payload = {**JOB_PAYLOAD_TEMPLATE, "job_group_id": group_id}
+    r = authed_client.post(BASE_JOBS, json=payload)
+    assert r.status_code == 201
+    body = r.json()
+    assert "recurrence" not in body
+    assert "end_date" not in body
+    assert "start_date" in body
 
 
 def test_get_job_not_found(authed_client):
