@@ -41,21 +41,24 @@ export interface JobGroup {
   name: string;
   type: 'route' | 'one_time';
   description: string;
+  customerId: number | null;
+  vehicleId: number | null;
+  defaultRevenue: number;
+  defaultDriverPayroll: number;
+  recurrence: 'daily' | 'weekly' | 'monthly' | 'one_time';
 }
 
 export interface Job {
   id: number;
   name: string;
   jobGroupId: number;
-  vehicleId: number;
+  vehicleId: number | null;
   driverId: number | null;
-  customerId: number;
+  customerId: number | null;
   revenue: number;
   driverPayroll: number;
   paymentsReceived: number;
-  recurrence: string;
   startDate: string;
-  endDate: string | null;
   status: 'active' | 'completed' | 'scheduled';
 }
 
