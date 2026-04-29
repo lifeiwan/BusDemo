@@ -1,4 +1,7 @@
+import logging
+
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 from firebase_admin import auth as firebase_auth
 
@@ -140,6 +143,7 @@ def create_user(
 
     # Step 2: Insert DB record using Firebase-generated UID
     try:
+        # Explicitly list fields — password is excluded intentionally (not a User column)
         obj = User(
             company_id=current_user.company_id,
             firebase_uid=firebase_user.uid,
@@ -152,12 +156,17 @@ def create_user(
         db.commit()
         db.refresh(obj)
         return obj
-    except Exception as e:
+    except SQLAlchemyError as e:
+        db.rollback()
         # Rollback: delete the Firebase account so it doesn't become an orphan
         try:
             firebase_auth.delete_user(firebase_user.uid)
-        except Exception:
-            pass  # best-effort cleanup
+        except Exception as rollback_exc:
+            logging.getLogger(__name__).error(
+                "Firebase rollback failed for uid=%s: %s",
+                firebase_user.uid,
+                rollback_exc,
+            )
         raise HTTPException(
             status_code=500,
             detail="User created in Firebase but database insert failed",
