@@ -2,9 +2,14 @@ import { useState, useEffect } from 'react';
 import { apiFetch } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 import { canEdit } from '../lib/permissions';
-import type { Role, AppUser } from '../types';
+import type { Role, AppUser } from '../types/index';
 
 const SYSTEM_ADMIN_EMAIL = 'tech.superbus101@gmail.com';
+
+interface CreatedCredentials {
+  email: string;
+  password: string;
+}
 
 export default function Users() {
   const { appRole } = useAuth();
@@ -16,11 +21,16 @@ export default function Users() {
 
   // New user form state
   const [showForm, setShowForm] = useState(false);
-  const [newFirebaseUid, setNewFirebaseUid] = useState('');
   const [newEmail, setNewEmail] = useState('');
   const [newName, setNewName] = useState('');
   const [newRoleId, setNewRoleId] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [formError, setFormError] = useState('');
+
+  // Success banner state
+  const [createdCredentials, setCreatedCredentials] = useState<CreatedCredentials | null>(null);
+  const [showCreatedPassword, setShowCreatedPassword] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -43,18 +53,21 @@ export default function Users() {
       const created = await apiFetch<AppUser>('/api/v1/users/', {
         method: 'POST',
         body: JSON.stringify({
-          firebaseUid: newFirebaseUid.trim(),
           email: newEmail.trim(),
           name: newName.trim(),
           roleId: Number(newRoleId),
           isActive: true,
+          password: newPassword,
         }),
       });
       setUsers(prev => [...prev, created]);
-      setNewFirebaseUid('');
+      setCreatedCredentials({ email: newEmail.trim(), password: newPassword });
+      setShowCreatedPassword(false);
       setNewEmail('');
       setNewName('');
       setNewRoleId('');
+      setNewPassword('');
+      setShowPassword(false);
       setShowForm(false);
     } catch (err: unknown) {
       setFormError(err instanceof Error ? err.message : 'Error creating user');
@@ -92,7 +105,7 @@ export default function Users() {
         <h1 className="text-2xl font-bold text-slate-800">User Management</h1>
         {editable && (
           <button
-            onClick={() => setShowForm(!showForm)}
+            onClick={() => { setShowForm(!showForm); setFormError(''); }}
             className="bg-blue-500 hover:bg-blue-600 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
           >
             {showForm ? 'Cancel' : '+ Add User'}
@@ -100,24 +113,42 @@ export default function Users() {
         )}
       </div>
 
+      {/* Success banner — shown after successful user creation */}
+      {createdCredentials && (
+        <div className="bg-green-50 border border-green-200 rounded-xl p-4 flex items-start justify-between gap-4">
+          <div className="space-y-1">
+            <p className="text-sm font-semibold text-green-800">User created successfully.</p>
+            <p className="text-sm text-green-700">
+              <span className="font-medium">Email:</span> {createdCredentials.email}
+            </p>
+            <p className="text-sm text-green-700 flex items-center gap-2">
+              <span className="font-medium">Initial password:</span>
+              <span className="font-mono">
+                {showCreatedPassword ? createdCredentials.password : '••••••••'}
+              </span>
+              <button
+                onClick={() => setShowCreatedPassword(v => !v)}
+                className="text-xs text-green-600 underline hover:text-green-800"
+              >
+                {showCreatedPassword ? 'Hide' : 'Show'}
+              </button>
+            </p>
+            <p className="text-xs text-green-600">Share these credentials with the new user.</p>
+          </div>
+          <button
+            onClick={() => setCreatedCredentials(null)}
+            className="text-green-400 hover:text-green-700 text-lg font-bold leading-none shrink-0"
+            aria-label="Dismiss"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
       {showForm && (
         <form onSubmit={handleAdd} className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 space-y-4">
           <h2 className="font-semibold text-slate-700">Add New User</h2>
-          <p className="text-sm text-slate-500">
-            Create the Firebase account first (Firebase console → Authentication → Add user),
-            then enter the Firebase UID shown in the user row.
-          </p>
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">Firebase UID *</label>
-              <input
-                value={newFirebaseUid}
-                onChange={e => setNewFirebaseUid(e.target.value)}
-                required
-                className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="abc123xyz..."
-              />
-            </div>
             <div>
               <label className="block text-xs font-medium text-slate-600 mb-1">Email *</label>
               <input
@@ -151,6 +182,27 @@ export default function Users() {
                   <option key={r.id} value={r.id}>{r.name}</option>
                 ))}
               </select>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-600 mb-1">Initial Password *</label>
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={newPassword}
+                  onChange={e => setNewPassword(e.target.value)}
+                  required
+                  minLength={6}
+                  className="w-full border border-slate-300 rounded-lg px-3 py-2 pr-16 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Min 6 characters"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(v => !v)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-slate-500 hover:text-slate-700"
+                >
+                  {showPassword ? 'Hide' : 'Show'}
+                </button>
+              </div>
             </div>
           </div>
           {formError && <p className="text-red-500 text-sm">{formError}</p>}
