@@ -1,6 +1,8 @@
 import { useState, useMemo } from 'react';
 import { useParams, Navigate } from 'react-router-dom';
 import { useData } from '../context/DataContext';
+import { useAuth } from '../context/AuthContext';
+import { canEdit } from '../lib/permissions';
 import { currentMonthRange } from '../lib/profit';
 import EntityDetail from '../components/EntityDetail';
 import Badge from '../components/Badge';
@@ -41,6 +43,8 @@ export default function VehicleDetail() {
     addFuel, updateFuel, deleteFuel,
     addInspection, updateInspection, deleteInspection,
     addVehicleFixedCost, updateVehicleFixedCost, deleteVehicleFixedCost } = data;
+  const { appRole } = useAuth();
+  const editable = canEdit(appRole, 'master');
 
   const vehicle = vehicles.find(v => v.id === Number(id));
   const [tab, setTab] = useState('fuel');
@@ -153,14 +157,24 @@ export default function VehicleDetail() {
     if (window.confirm(`Delete ${FIXED_COST_LABELS[c.type]} entry?`)) deleteVehicleFixedCost(c.id);
   }
 
-  const setM = (field: keyof MaintForm) => (ev: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
-    setMaintForm(f => ({ ...f, [field]: ev.target.value }));
-  const setF = (field: keyof FuelForm) => (ev: React.ChangeEvent<HTMLInputElement>) =>
-    setFuelForm(f => ({ ...f, [field]: field === 'full' ? (ev.target as HTMLInputElement).checked : ev.target.value }));
+  const setM = (field: keyof MaintForm) => (ev: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const val = ['mileage', 'cost'].includes(field) ? Number(ev.target.value) : ev.target.value;
+    setMaintForm(f => ({ ...f, [field]: val }));
+  };
+  const setF = (field: keyof FuelForm) => (ev: React.ChangeEvent<HTMLInputElement>) => {
+    const val = field === 'full'
+      ? (ev.target as HTMLInputElement).checked
+      : ['gallons', 'cpg', 'total', 'odometer'].includes(field)
+        ? Number(ev.target.value)
+        : ev.target.value;
+    setFuelForm(f => ({ ...f, [field]: val }));
+  };
   const setI = (field: keyof InspForm) => (ev: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
     setInspForm(f => ({ ...f, [field]: field === 'passed' ? ev.target.value === 'true' : ev.target.value }));
-  const setFx = (field: keyof FixedCostForm) => (ev: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
-    setFixedForm(f => ({ ...f, [field]: ev.target.value }));
+  const setFx = (field: keyof FixedCostForm) => (ev: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    const val = field === 'cost' ? Number(ev.target.value) : ev.target.value;
+    setFixedForm(f => ({ ...f, [field]: val }));
+  };
 
   return (
     <EntityDetail
@@ -196,11 +210,13 @@ export default function VehicleDetail() {
 
       {tab === 'maintenance' && (
         <>
-          <div className="flex justify-end mb-3">
-            <button onClick={openAddMaint} className="px-3 py-1.5 bg-blue-500 text-white text-sm font-medium rounded-lg hover:bg-blue-600 transition-colors">
-              + Add Entry
-            </button>
-          </div>
+          {editable && (
+            <div className="flex justify-end mb-3">
+              <button onClick={openAddMaint} className="px-3 py-1.5 bg-blue-500 text-white text-sm font-medium rounded-lg hover:bg-blue-600 transition-colors">
+                + Add Entry
+              </button>
+            </div>
+          )}
           <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
             <table className="w-full text-sm">
               <thead>
@@ -223,10 +239,12 @@ export default function VehicleDetail() {
                     <td className="px-4 py-3 text-slate-600">{e.tech}</td>
                     <td className="px-4 py-3 text-slate-500">{e.notes || '—'}</td>
                     <td className="px-4 py-3">
-                      <div className="flex gap-1">
-                        <button onClick={() => openEditMaint(e)} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors" title="Edit">✎</button>
-                        <button onClick={() => delMaint(e)} className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors" title="Delete">✕</button>
-                      </div>
+                      {editable && (
+                        <div className="flex gap-1">
+                          <button onClick={() => openEditMaint(e)} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors" title="Edit">✎</button>
+                          <button onClick={() => delMaint(e)} className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors" title="Delete">✕</button>
+                        </div>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -238,11 +256,13 @@ export default function VehicleDetail() {
 
       {tab === 'fuel' && (
         <>
-          <div className="flex justify-end mb-3">
-            <button onClick={openAddFuel} className="px-3 py-1.5 bg-blue-500 text-white text-sm font-medium rounded-lg hover:bg-blue-600 transition-colors">
-              + Add Entry
-            </button>
-          </div>
+          {editable && (
+            <div className="flex justify-end mb-3">
+              <button onClick={openAddFuel} className="px-3 py-1.5 bg-blue-500 text-white text-sm font-medium rounded-lg hover:bg-blue-600 transition-colors">
+                + Add Entry
+              </button>
+            </div>
+          )}
           <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
             <table className="w-full text-sm">
               <thead>
@@ -265,10 +285,12 @@ export default function VehicleDetail() {
                     <td className="px-4 py-3 text-slate-600">{e.odometer.toLocaleString()}</td>
                     <td className="px-4 py-3">{e.full ? <Badge value="pass" /> : <Badge value="fail" />}</td>
                     <td className="px-4 py-3">
-                      <div className="flex gap-1">
-                        <button onClick={() => openEditFuel(e)} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors" title="Edit">✎</button>
-                        <button onClick={() => delFuel(e)} className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors" title="Delete">✕</button>
-                      </div>
+                      {editable && (
+                        <div className="flex gap-1">
+                          <button onClick={() => openEditFuel(e)} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors" title="Edit">✎</button>
+                          <button onClick={() => delFuel(e)} className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors" title="Delete">✕</button>
+                        </div>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -280,11 +302,13 @@ export default function VehicleDetail() {
 
       {tab === 'inspections' && (
         <>
-          <div className="flex justify-end mb-3">
-            <button onClick={openAddInsp} className="px-3 py-1.5 bg-blue-500 text-white text-sm font-medium rounded-lg hover:bg-blue-600 transition-colors">
-              + Add Entry
-            </button>
-          </div>
+          {editable && (
+            <div className="flex justify-end mb-3">
+              <button onClick={openAddInsp} className="px-3 py-1.5 bg-blue-500 text-white text-sm font-medium rounded-lg hover:bg-blue-600 transition-colors">
+                + Add Entry
+              </button>
+            </div>
+          )}
           <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
             <table className="w-full text-sm">
               <thead>
@@ -305,10 +329,12 @@ export default function VehicleDetail() {
                     <td className="px-4 py-3"><Badge value={e.passed ? 'pass' : 'fail'} /></td>
                     <td className="px-4 py-3 text-slate-500">{e.notes || '—'}</td>
                     <td className="px-4 py-3">
-                      <div className="flex gap-1">
-                        <button onClick={() => openEditInsp(e)} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors" title="Edit">✎</button>
-                        <button onClick={() => delInsp(e)} className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors" title="Delete">✕</button>
-                      </div>
+                      {editable && (
+                        <div className="flex gap-1">
+                          <button onClick={() => openEditInsp(e)} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors" title="Edit">✎</button>
+                          <button onClick={() => delInsp(e)} className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors" title="Delete">✕</button>
+                        </div>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -320,11 +346,13 @@ export default function VehicleDetail() {
 
       {tab === 'fixed' && (
         <>
-          <div className="flex justify-end mb-3">
-            <button onClick={openAddFixed} className="px-3 py-1.5 bg-blue-500 text-white text-sm font-medium rounded-lg hover:bg-blue-600 transition-colors">
-              + Add Entry
-            </button>
-          </div>
+          {editable && (
+            <div className="flex justify-end mb-3">
+              <button onClick={openAddFixed} className="px-3 py-1.5 bg-blue-500 text-white text-sm font-medium rounded-lg hover:bg-blue-600 transition-colors">
+                + Add Entry
+              </button>
+            </div>
+          )}
           <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
             <table className="w-full text-sm">
               <thead>
@@ -345,10 +373,12 @@ export default function VehicleDetail() {
                     <td className="px-4 py-3 text-slate-600">{c.startDate}</td>
                     <td className="px-4 py-3 text-slate-500">{c.notes || '—'}</td>
                     <td className="px-4 py-3">
-                      <div className="flex gap-1">
-                        <button onClick={() => openEditFixed(c)} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors" title="Edit">✎</button>
-                        <button onClick={() => delFixed(c)} className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors" title="Delete">✕</button>
-                      </div>
+                      {editable && (
+                        <div className="flex gap-1">
+                          <button onClick={() => openEditFixed(c)} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors" title="Edit">✎</button>
+                          <button onClick={() => delFixed(c)} className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors" title="Delete">✕</button>
+                        </div>
+                      )}
                     </td>
                   </tr>
                 ))}
