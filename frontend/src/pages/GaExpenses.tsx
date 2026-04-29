@@ -344,7 +344,7 @@ export default function GaExpenses() {
             ))}
             {sorted.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-4 py-8 text-center text-slate-400">{t('common.noData')}</td>
+                <td colSpan={editable ? 5 : 4} className="px-4 py-8 text-center text-slate-400">{t('common.noData')}</td>
               </tr>
             )}
           </tbody>
