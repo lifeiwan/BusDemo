@@ -2,11 +2,12 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.middleware.auth import require_permission
+from app.middleware.auth import require_permission, get_current_user
 from app.models.user import User, Role
 from app.schemas.user import (
     RoleCreate, RoleRead, RoleUpdate,
     UserCreate, UserRead, UserUpdate,
+    UserMeRead,
 )
 
 roles_router = APIRouter(prefix="/roles", tags=["users"])
@@ -90,6 +91,21 @@ def delete_role(
 
 
 # ── Users ─────────────────────────────────────────────────────────────────────
+
+@users_router.get("/me", response_model=UserMeRead)
+def get_me(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    role = current_user.role  # loaded via SQLAlchemy relationship
+    return UserMeRead(
+        id=current_user.id,
+        email=current_user.email,
+        name=current_user.name,
+        role_id=current_user.role_id,
+        role_name=role.name,
+    )
+
 
 @users_router.get("/", response_model=list[UserRead])
 def list_users(

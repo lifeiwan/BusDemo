@@ -47,3 +47,13 @@ class UserRead(UserBase):
     company_id: int
     created_at: datetime
     updated_at: datetime
+
+
+class UserMeRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    email: str
+    name: str
+    role_id: int
+    role_name: str
