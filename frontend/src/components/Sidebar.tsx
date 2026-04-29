@@ -1,9 +1,12 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { useAuth } from '../context/AuthContext';
+import { canViewSection } from '../lib/permissions';
 
 export default function Sidebar() {
   const { pathname } = useLocation();
   const { t } = useTranslation();
+  const { appRole } = useAuth();
 
   const opsItems = [
     { label: t('sidebar.jobGroups'), path: '/ops/job-groups' },
@@ -12,13 +15,13 @@ export default function Sidebar() {
 
   const profitItems = [
     { label: t('sidebar.profitability'), path: '/profit/profitability' },
-  ];
+    { label: t('sidebar.gaExpenses'),    path: '/master/ga-expenses'  },
+  ].filter(() => canViewSection(appRole, 'profit'));
 
   const masterItems = [
     { label: t('sidebar.vehicles'),   path: '/master/vehicles'    },
     { label: t('sidebar.customers'),  path: '/master/customers'   },
     { label: t('sidebar.drivers'),    path: '/master/drivers'     },
-    { label: t('sidebar.gaExpenses'), path: '/master/ga-expenses' },
   ];
 
   const vehicleSubItems = [
@@ -31,11 +34,11 @@ export default function Sidebar() {
     { label: t('sidebar.plReport'),         path: '/reports/pl'         },
     { label: t('sidebar.vehicleReport'),    path: '/reports/vehicle'    },
     { label: t('sidebar.jobGroupReport'),   path: '/reports/job-group'  },
-  ];
+  ].filter(() => canViewSection(appRole, 'reports'));
 
   const inOps     = pathname.startsWith('/ops');
-  const inProfit  = pathname.startsWith('/profit');
-  const inMaster  = pathname.startsWith('/master');
+  const inProfit  = pathname.startsWith('/profit') || pathname === '/master/ga-expenses';
+  const inMaster  = pathname.startsWith('/master') && pathname !== '/master/ga-expenses';
   const inReports = pathname.startsWith('/reports');
 
   if (!inOps && !inProfit && !inMaster && !inReports) return null;

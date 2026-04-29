@@ -32,6 +32,8 @@ function ProtectedRoute({ children }: { children: ReactNode }) {
 function RoleRoute({ children, section }: { children: ReactNode; section: Section }) {
   const { user, appRole, loading } = useAuth();
   if (loading) return null;
+  // Note: this component is always rendered inside ProtectedRoute,
+  // so !user is an unreachable safety net.
   if (!user) return <Navigate to="/login" replace />;
   if (!canViewSection(appRole, section)) return <Navigate to="/" replace />;
   return <>{children}</>;
