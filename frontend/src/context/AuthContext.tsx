@@ -8,9 +8,12 @@ import {
   onAuthStateChanged,
 } from 'firebase/auth';
 import { auth } from '../firebase';
+import { apiFetch } from '../lib/api';
+import type { AppRole } from '../lib/permissions';
 
 interface AuthContextValue {
   user: User | null;
+  appRole: AppRole | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -21,11 +24,22 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [appRole, setAppRole] = useState<AppRole | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, (u) => {
+    const unsub = onAuthStateChanged(auth, async (u) => {
       setUser(u);
+      if (u) {
+        try {
+          const me = await apiFetch<{ roleName: string }>('/api/v1/users/me');
+          setAppRole(me.roleName as AppRole);
+        } catch {
+          setAppRole(null);
+        }
+      } else {
+        setAppRole(null);
+      }
       setLoading(false);
     });
     return unsub;
@@ -37,6 +51,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function logout(): Promise<void> {
     await signOut(auth);
+    setAppRole(null);
   }
 
   async function resetPassword(email: string): Promise<void> {
@@ -44,7 +59,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout, resetPassword }}>
+    <AuthContext.Provider value={{ user, appRole, loading, login, logout, resetPassword }}>
       {children}
     </AuthContext.Provider>
   );
