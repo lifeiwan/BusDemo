@@ -24,3 +24,9 @@ export function canEdit(role: AppRole | null, section: Section): boolean {
   if (!role) return false;
   return EDIT_MAP[role].includes(section);
 }
+
+export const APP_ROLES = ['admin', 'investor', 'manager', 'staff'] as const;
+
+export function isAppRole(v: unknown): v is AppRole {
+  return APP_ROLES.includes(v as AppRole);
+}

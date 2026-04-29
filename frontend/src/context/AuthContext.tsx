@@ -9,6 +9,7 @@ import {
 } from 'firebase/auth';
 import { auth } from '../firebase';
 import { apiFetch } from '../lib/api';
+import { isAppRole } from '../lib/permissions';
 import type { AppRole } from '../lib/permissions';
 
 interface AuthContextValue {
@@ -33,13 +34,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (u) {
         try {
           const me = await apiFetch<{ roleName: string }>('/api/v1/users/me');
-          setAppRole(me.roleName as AppRole);
+          setAppRole(isAppRole(me.roleName) ? me.roleName : null);
         } catch {
+          // Network failure or token unavailable; degrade gracefully.
           setAppRole(null);
         }
       } else {
         setAppRole(null);
       }
+      // NOTE: appRole is fetched once per auth state change.
+      // If an admin changes this user's role mid-session, the UI reflects
+      // the change only after the user logs out and back in.
       setLoading(false);
     });
     return unsub;
