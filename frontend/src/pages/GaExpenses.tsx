@@ -1,6 +1,8 @@
 import { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useData } from '../context/DataContext';
+import { useAuth } from '../context/AuthContext';
+import { canEdit } from '../lib/permissions';
 import Modal from '../components/Modal';
 import { GA_CATEGORIES } from '../data/gaEntries';
 import type { GaEntry } from '../types';
@@ -24,6 +26,8 @@ const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Se
 
 export default function GaExpenses() {
   const { t } = useTranslation();
+  const { appRole } = useAuth();
+  const editable = canEdit(appRole, 'profit');
   const { gaEntries, addGaEntry, updateGaEntry, deleteGaEntry } = useData();
 
   const [modal, setModal] = useState<{ open: boolean; editing: GaEntry | null }>({ open: false, editing: null });
@@ -132,7 +136,8 @@ export default function GaExpenses() {
   }
 
   const set = (field: keyof FormState) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    setForm(f => ({ ...f, [field]: e.target.value }));
+    const val = field === 'amount' ? Number(e.target.value) : e.target.value;
+    setForm(f => ({ ...f, [field]: val }));
   };
 
   return (
@@ -183,10 +188,12 @@ export default function GaExpenses() {
           <h1 className="text-2xl font-bold text-slate-800">{t('gaExpenses.title')}</h1>
           <p className="text-sm text-slate-500 mt-1">{t('gaExpenses.subtitle')}</p>
         </div>
-        <button onClick={openAdd}
-          className="px-4 py-2 bg-blue-500 text-white text-sm font-medium rounded-lg hover:bg-blue-600 transition-colors">
-          {t('gaExpenses.add')}
-        </button>
+        {editable && (
+          <button onClick={openAdd}
+            className="px-4 py-2 bg-blue-500 text-white text-sm font-medium rounded-lg hover:bg-blue-600 transition-colors">
+            {t('gaExpenses.add')}
+          </button>
+        )}
       </div>
 
       {/* Year tabs */}
@@ -315,7 +322,7 @@ export default function GaExpenses() {
               <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">{t('gaExpenses.category')}</th>
               <th className="text-right px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">{t('gaExpenses.amount')}</th>
               <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">{t('common.notes')}</th>
-              <th className="px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">{t('common.actions')}</th>
+              {editable && <th className="px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">{t('common.actions')}</th>}
             </tr>
           </thead>
           <tbody>
@@ -325,12 +332,14 @@ export default function GaExpenses() {
                 <td className="px-4 py-3 font-medium text-slate-800">{entry.category}</td>
                 <td className="px-4 py-3 text-right font-semibold text-red-600">{fmt$(entry.amount)}</td>
                 <td className="px-4 py-3 text-slate-500">{entry.notes || '—'}</td>
-                <td className="px-4 py-3">
-                  <div className="flex gap-2 justify-center">
-                    <button onClick={() => openEdit(entry)} className="text-xs text-blue-600 hover:underline">{t('common.edit')}</button>
-                    <button onClick={() => del(entry)} className="text-xs text-red-500 hover:underline">{t('common.delete')}</button>
-                  </div>
-                </td>
+                {editable && (
+                  <td className="px-4 py-3">
+                    <div className="flex gap-2 justify-center">
+                      <button onClick={() => openEdit(entry)} className="text-xs text-blue-600 hover:underline">{t('common.edit')}</button>
+                      <button onClick={() => del(entry)} className="text-xs text-red-500 hover:underline">{t('common.delete')}</button>
+                    </div>
+                  </td>
+                )}
               </tr>
             ))}
             {sorted.length === 0 && (

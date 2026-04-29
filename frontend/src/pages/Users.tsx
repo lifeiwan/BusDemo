@@ -1,8 +1,14 @@
 import { useState, useEffect } from 'react';
 import { apiFetch } from '../lib/api';
+import { useAuth } from '../context/AuthContext';
+import { canEdit } from '../lib/permissions';
 import type { Role, AppUser } from '../types';
 
+const SYSTEM_ADMIN_EMAIL = 'tech.superbus101@gmail.com';
+
 export default function Users() {
+  const { appRole } = useAuth();
+  const editable = canEdit(appRole, 'admin');
   const [users, setUsers] = useState<AppUser[]>([]);
   const [roles, setRoles] = useState<Role[]>([]);
   const [loading, setLoading] = useState(true);
@@ -84,12 +90,14 @@ export default function Users() {
     <div className="space-y-6 max-w-4xl">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-slate-800">User Management</h1>
-        <button
-          onClick={() => setShowForm(!showForm)}
-          className="bg-blue-500 hover:bg-blue-600 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
-        >
-          {showForm ? 'Cancel' : '+ Add User'}
-        </button>
+        {editable && (
+          <button
+            onClick={() => setShowForm(!showForm)}
+            className="bg-blue-500 hover:bg-blue-600 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
+          >
+            {showForm ? 'Cancel' : '+ Add User'}
+          </button>
+        )}
       </div>
 
       {showForm && (
@@ -162,40 +170,58 @@ export default function Users() {
               <th className="px-4 py-3 text-left font-semibold text-slate-600">Email</th>
               <th className="px-4 py-3 text-left font-semibold text-slate-600">Name</th>
               <th className="px-4 py-3 text-left font-semibold text-slate-600">Role</th>
-              <th className="px-4 py-3 text-left font-semibold text-slate-600">Firebase UID</th>
               <th className="px-4 py-3 text-left font-semibold text-slate-600">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {users.map(user => (
-              <tr key={user.id} className="hover:bg-slate-50">
-                <td className="px-4 py-3 text-slate-800">{user.email}</td>
-                <td className="px-4 py-3 text-slate-600">{user.name || '—'}</td>
-                <td className="px-4 py-3">
-                  <select
-                    value={user.roleId}
-                    onChange={e => handleRoleChange(user, Number(e.target.value))}
-                    className="border border-slate-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    {roles.map(r => (
-                      <option key={r.id} value={r.id}>{r.name}</option>
-                    ))}
-                  </select>
-                </td>
-                <td className="px-4 py-3 text-slate-400 text-xs font-mono">{user.firebaseUid}</td>
-                <td className="px-4 py-3">
-                  <button
-                    onClick={() => handleDelete(user.id)}
-                    className="text-red-500 hover:text-red-700 text-xs font-medium transition-colors"
-                  >
-                    Remove
-                  </button>
-                </td>
-              </tr>
-            ))}
+            {users.map(user => {
+              const isSystemAdmin = user.email === SYSTEM_ADMIN_EMAIL;
+              return (
+                <tr key={user.id} className={isSystemAdmin ? 'bg-slate-50' : 'hover:bg-slate-50'}>
+                  <td className="px-4 py-3 text-slate-800">
+                    {user.email}
+                    {isSystemAdmin && (
+                      <span className="ml-2 text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full font-medium">System</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3 text-slate-600">{user.name || '—'}</td>
+                  <td className="px-4 py-3">
+                    {isSystemAdmin ? (
+                      <span className="text-sm font-medium text-slate-700">admin</span>
+                    ) : editable ? (
+                      <select
+                        value={user.roleId}
+                        onChange={e => handleRoleChange(user, Number(e.target.value))}
+                        className="border border-slate-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        {roles.map(r => (
+                          <option key={r.id} value={r.id}>{r.name}</option>
+                        ))}
+                      </select>
+                    ) : (
+                      <span className="text-sm text-slate-600">{roles.find(r => r.id === user.roleId)?.name ?? user.roleId}</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3">
+                    {isSystemAdmin ? (
+                      <span className="text-xs text-slate-400">—</span>
+                    ) : editable ? (
+                      <button
+                        onClick={() => handleDelete(user.id)}
+                        className="text-red-500 hover:text-red-700 text-xs font-medium transition-colors"
+                      >
+                        Remove
+                      </button>
+                    ) : (
+                      <span className="text-xs text-slate-400">—</span>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
             {users.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-4 py-6 text-center text-slate-400">
+                <td colSpan={4} className="px-4 py-6 text-center text-slate-400">
                   No users yet. Add the first user above.
                 </td>
               </tr>
