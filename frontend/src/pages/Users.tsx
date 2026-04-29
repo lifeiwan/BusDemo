@@ -105,7 +105,17 @@ export default function Users() {
         <h1 className="text-2xl font-bold text-slate-800">User Management</h1>
         {editable && (
           <button
-            onClick={() => { setShowForm(!showForm); setFormError(''); }}
+            onClick={() => {
+              if (showForm) {
+                setNewEmail('');
+                setNewName('');
+                setNewRoleId('');
+                setNewPassword('');
+                setShowPassword(false);
+              }
+              setShowForm(v => !v);
+              setFormError('');
+            }}
             className="bg-blue-500 hover:bg-blue-600 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
           >
             {showForm ? 'Cancel' : '+ Add User'}
@@ -198,6 +208,7 @@ export default function Users() {
                 <button
                   type="button"
                   onClick={() => setShowPassword(v => !v)}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
                   className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-slate-500 hover:text-slate-700"
                 >
                   {showPassword ? 'Hide' : 'Show'}
