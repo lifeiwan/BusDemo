@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from firebase_admin import auth as firebase_auth
 
 from app.database import get_db
 from app.middleware.auth import require_permission, get_current_user
@@ -120,11 +121,47 @@ def create_user(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_permission("users", "write")),
 ):
-    obj = User(company_id=current_user.company_id, **body.model_dump())
-    db.add(obj)
-    db.commit()
-    db.refresh(obj)
-    return obj
+    # Step 1: Create Firebase Auth account
+    try:
+        firebase_user = firebase_auth.create_user(
+            email=body.email,
+            password=body.password,
+        )
+    except firebase_auth.EmailAlreadyExistsError:
+        raise HTTPException(
+            status_code=409,
+            detail="A Firebase account with this email already exists",
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to create Firebase account: {str(e)}",
+        )
+
+    # Step 2: Insert DB record using Firebase-generated UID
+    try:
+        obj = User(
+            company_id=current_user.company_id,
+            firebase_uid=firebase_user.uid,
+            email=body.email,
+            name=body.name,
+            role_id=body.role_id,
+            is_active=body.is_active,
+        )
+        db.add(obj)
+        db.commit()
+        db.refresh(obj)
+        return obj
+    except Exception as e:
+        # Rollback: delete the Firebase account so it doesn't become an orphan
+        try:
+            firebase_auth.delete_user(firebase_user.uid)
+        except Exception:
+            pass  # best-effort cleanup
+        raise HTTPException(
+            status_code=500,
+            detail="User created in Firebase but database insert failed",
+        )
 
 
 @users_router.get("/{user_id}", response_model=UserRead)
