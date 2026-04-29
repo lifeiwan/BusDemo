@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useData } from '../context/DataContext';
+import { useAuth } from '../context/AuthContext';
+import { canEdit } from '../lib/permissions';
 import Badge from '../components/Badge';
 import Modal from '../components/Modal';
 import JobModal from '../components/JobModal';
@@ -36,6 +38,8 @@ function suggestNextDate(group: JobGroup, jobs: Job[]): string {
 
 export default function JobGroups() {
   const { t } = useTranslation();
+  const { appRole } = useAuth();
+  const editable = canEdit(appRole, 'ops');
   const data = useData();
   const { jobGroups, jobs, vehicles, customers, addJobGroup, updateJobGroup, deleteJobGroup } = data;
 
@@ -99,9 +103,11 @@ export default function JobGroups() {
           <h1 className="text-2xl font-bold text-slate-800">{t('jobGroups.title')}</h1>
           <p className="text-sm text-slate-500 mt-1">{t('jobGroups.subtitle')}</p>
         </div>
-        <button onClick={openAdd} className="px-4 py-2 bg-blue-500 text-white text-sm font-medium rounded-lg hover:bg-blue-600 transition-colors">
-          {t('jobGroups.add')}
-        </button>
+        {editable && (
+          <button onClick={openAdd} className="px-4 py-2 bg-blue-500 text-white text-sm font-medium rounded-lg hover:bg-blue-600 transition-colors">
+            {t('jobGroups.add')}
+          </button>
+        )}
       </div>
 
       <div className="grid grid-cols-2 gap-4 mb-6">
@@ -128,10 +134,12 @@ export default function JobGroups() {
                     {jg.defaultRevenue > 0 && `$${jg.defaultRevenue.toLocaleString()} / run`}
                   </p>
                 </div>
-                <div className="flex gap-1 shrink-0">
-                  <button onClick={() => openEdit(jg)} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors" title={t('common.edit')}>✎</button>
-                  <button onClick={() => del(jg)} className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors" title={t('common.delete')}>✕</button>
-                </div>
+                {editable && (
+                  <div className="flex gap-1 shrink-0">
+                    <button onClick={() => openEdit(jg)} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors" title={t('common.edit')}>✎</button>
+                    <button onClick={() => del(jg)} className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors" title={t('common.delete')}>✕</button>
+                  </div>
+                )}
               </div>
 
               <div className="border-t border-slate-100 px-4 py-2 flex-1">
@@ -156,12 +164,14 @@ export default function JobGroups() {
 
               <div className="border-t border-slate-100 px-4 py-2 flex items-center justify-between">
                 <span className="text-xs text-slate-400">{groupJobs.length} {t('sidebar.jobs').toLowerCase()}</span>
-                <button
-                  onClick={() => openSchedule(jg)}
-                  className="px-2.5 py-1 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
-                >
-                  {t('jobGroups.schedule')}
-                </button>
+                {editable && (
+                  <button
+                    onClick={() => openSchedule(jg)}
+                    className="px-2.5 py-1 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
+                  >
+                    {t('jobGroups.schedule')}
+                  </button>
+                )}
               </div>
             </div>
           );

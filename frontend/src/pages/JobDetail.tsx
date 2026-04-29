@@ -2,8 +2,11 @@ import { useState } from 'react';
 import { useParams, Navigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useData } from '../context/DataContext';
+import { useAuth } from '../context/AuthContext';
+import { canEdit } from '../lib/permissions';
 import JobModal from '../components/JobModal';
 import StatusSwitcher from '../components/StatusSwitcher';
+import Badge from '../components/Badge';
 
 function fmt$(n: number) {
   return '$' + Math.abs(n).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
@@ -14,6 +17,8 @@ export default function JobDetail() {
   const { jobs, jobGroups, vehicles, drivers, customers, jobLineItems } = useData();
 
   const { t } = useTranslation();
+  const { appRole } = useAuth();
+  const editable = canEdit(appRole, 'ops');
   const job = jobs.find(j => j.id === Number(id));
   const [editing, setEditing] = useState(false);
   if (!job) return <Navigate to="/ops/jobs" replace />;
@@ -56,11 +61,16 @@ export default function JobDetail() {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <StatusSwitcher jobId={job.id} current={job.status as 'scheduled' | 'active' | 'completed'} />
-            <button onClick={() => setEditing(true)}
-              className="px-3 py-1.5 bg-blue-500 text-white text-sm font-medium rounded-lg hover:bg-blue-600 transition-colors">
-              Edit
-            </button>
+            {editable
+              ? <StatusSwitcher jobId={job.id} current={job.status as 'scheduled' | 'active' | 'completed'} />
+              : <Badge value={job.status} />
+            }
+            {editable && (
+              <button onClick={() => setEditing(true)}
+                className="px-3 py-1.5 bg-blue-500 text-white text-sm font-medium rounded-lg hover:bg-blue-600 transition-colors">
+                Edit
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -119,7 +129,12 @@ export default function JobDetail() {
             </div>
             <div>
               <dt className="text-xs text-slate-500 uppercase tracking-wide mb-0.5">{t('jobDetail.statusLabel')}</dt>
-              <dd><StatusSwitcher jobId={job.id} current={job.status as 'scheduled' | 'active' | 'completed'} /></dd>
+              <dd>
+                {editable
+                  ? <StatusSwitcher jobId={job.id} current={job.status as 'scheduled' | 'active' | 'completed'} />
+                  : <Badge value={job.status} />
+                }
+              </dd>
             </div>
           </dl>
         </div>

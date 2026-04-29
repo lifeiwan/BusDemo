@@ -2,6 +2,8 @@ import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useData } from '../context/DataContext';
+import { useAuth } from '../context/AuthContext';
+import { canEdit } from '../lib/permissions';
 import { profitByCustomer, currentMonthRange } from '../lib/profit';
 import Modal from '../components/Modal';
 import type { Customer } from '../types';
@@ -15,6 +17,8 @@ function fmt$(n: number) {
 
 export default function Customers() {
   const { t } = useTranslation();
+  const { appRole } = useAuth();
+  const editable = canEdit(appRole, 'ops');
   const data = useData();
   const { customers, jobs, addCustomer, updateCustomer, deleteCustomer } = data;
   const range = useMemo(currentMonthRange, []);
@@ -56,9 +60,11 @@ export default function Customers() {
           <h1 className="text-2xl font-bold text-slate-800">{t('customers.title')}</h1>
           <p className="text-sm text-slate-500 mt-1">{t('customers.subtitle', { count: customers.length })}</p>
         </div>
-        <button onClick={openAdd} className="px-4 py-2 bg-blue-500 text-white text-sm font-medium rounded-lg hover:bg-blue-600 transition-colors">
-          {t('customers.add')}
-        </button>
+        {editable && (
+          <button onClick={openAdd} className="px-4 py-2 bg-blue-500 text-white text-sm font-medium rounded-lg hover:bg-blue-600 transition-colors">
+            {t('customers.add')}
+          </button>
+        )}
       </div>
 
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
@@ -87,10 +93,12 @@ export default function Customers() {
                     {profit ? (profit.netProfit < 0 ? '-' : '') + fmt$(profit.netProfit) : '—'}
                   </td>
                   <td className="px-4 py-3">
-                    <div className="flex gap-1">
-                      <button onClick={() => openEdit(c)} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors" title={t('common.edit')}>✎</button>
-                      <button onClick={() => del(c)} className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors" title={t('common.delete')}>✕</button>
-                    </div>
+                    {editable && (
+                      <div className="flex gap-1">
+                        <button onClick={() => openEdit(c)} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors" title={t('common.edit')}>✎</button>
+                        <button onClick={() => del(c)} className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors" title={t('common.delete')}>✕</button>
+                      </div>
+                    )}
                   </td>
                 </tr>
               );
