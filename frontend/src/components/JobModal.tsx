@@ -135,7 +135,7 @@ export default function JobModal({ editing, prefill, onClose }: Props) {
   const set = (field: keyof FormState) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const val = field === 'driverId'
       ? (e.target.value === '' ? null : Number(e.target.value))
-      : ['vehicleId', 'customerId', 'jobGroupId'].includes(field)
+      : ['vehicleId', 'customerId', 'jobGroupId', 'revenue', 'driverPayroll', 'paymentsReceived'].includes(field)
         ? Number(e.target.value)
         : e.target.value;
     setForm(f => ({ ...f, [field]: val }));
@@ -348,19 +348,19 @@ export default function JobModal({ editing, prefill, onClose }: Props) {
                 <div>
                   <label className="block text-xs text-slate-500 mb-1">{t('jobs.fuelGallons')}</label>
                   <input type="number" value={fuelDraft.gallons} min={0} step="0.001"
-                    onChange={e => setFuelDraft(f => ({ ...f, gallons: e.target.value }))}
-                    className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="0.000" />
+                    onChange={e => setFuelDraft(f => ({ ...f, gallons: e.target.value.replace(/^0+(\d)/, '$1') }))}
+  className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="0.000" />
                 </div>
                 <div>
                   <label className="block text-xs text-slate-500 mb-1">{t('jobs.fuelCpg')}</label>
                   <input type="number" value={fuelDraft.cpg} min={0} step="0.001"
-                    onChange={e => setFuelDraft(f => ({ ...f, cpg: e.target.value }))}
+                    onChange={e => setFuelDraft(f => ({ ...f, cpg: e.target.value.replace(/^0+(\d)/, '$1') }))}
                     className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="0.000" />
                 </div>
                 <div>
                   <label className="block text-xs text-slate-500 mb-1">{t('jobs.fuelOdometer')}</label>
                   <input type="number" value={fuelDraft.odometer} min={0}
-                    onChange={e => setFuelDraft(f => ({ ...f, odometer: e.target.value }))}
+                    onChange={e => setFuelDraft(f => ({ ...f, odometer: e.target.value.replace(/^0+(\d)/, '$1') }))}
                     className="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="0" />
                 </div>
                 <div>

@@ -59,7 +59,7 @@ export default function StatusSwitcher({ jobId, current }: Props) {
 
   return (
     <div>
-      <div className="inline-flex rounded-lg border border-slate-200 overflow-hidden text-xs font-semibold">
+      <div className="inline-flex rounded border border-slate-200 overflow-hidden text-[11px] font-medium">
         {STATUSES.map(s => {
           const isDisplayed = s === displayed;
           return (
@@ -69,7 +69,7 @@ export default function StatusSwitcher({ jobId, current }: Props) {
               onClick={() => handleSegmentClick(s)}
               disabled={saving}
               className={[
-                'px-3 py-1.5 border-r border-slate-200 last:border-r-0 transition-colors',
+                'px-2 py-0.5 border-r border-slate-200 last:border-r-0 transition-colors',
                 isDisplayed
                   ? activeStyle[s]
                   : `bg-white text-slate-400 ${ghostHover[s]}`,
