@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useData } from '../context/DataContext';
+import { useAuth } from '../context/AuthContext';
+import { canEdit } from '../lib/permissions';
 import Badge from '../components/Badge';
 import JobModal from '../components/JobModal';
 import type { Job } from '../types';
@@ -13,6 +15,8 @@ function fmt$(n: number) {
 export default function Jobs() {
   const { t } = useTranslation();
   const { jobs, vehicles, drivers, customers, jobGroups, jobLineItems, deleteJob } = useData();
+  const { appRole } = useAuth();
+  const editable = canEdit(appRole, 'ops');
   const [modal, setModal] = useState<{ open: boolean; editing: Job | null }>({ open: false, editing: null });
 
   const _now = new Date();
@@ -29,10 +33,12 @@ export default function Jobs() {
           <h1 className="text-2xl font-bold text-slate-800">{t('jobs.title')}</h1>
           <p className="text-sm text-slate-500 mt-1">{t('jobs.subtitle', { count: jobs.length })}</p>
         </div>
-        <button onClick={() => setModal({ open: true, editing: null })}
-          className="px-4 py-2 bg-blue-500 text-white text-sm font-medium rounded-lg hover:bg-blue-600 transition-colors">
-          {t('jobs.add')}
-        </button>
+        {editable && (
+          <button onClick={() => setModal({ open: true, editing: null })}
+            className="px-4 py-2 bg-blue-500 text-white text-sm font-medium rounded-lg hover:bg-blue-600 transition-colors">
+            {t('jobs.add')}
+          </button>
+        )}
       </div>
 
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
@@ -75,10 +81,14 @@ export default function Jobs() {
                   <td className="px-4 py-3"><Badge value={job.status} /></td>
                   <td className="px-4 py-3">
                     <div className="flex gap-1">
-                      <button onClick={() => setModal({ open: true, editing: job })}
-                        className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors" title={t('common.edit')}>✎</button>
-                      <button onClick={() => del(job)}
-                        className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors" title={t('common.delete')}>✕</button>
+                      {editable && (
+                        <button onClick={() => setModal({ open: true, editing: job })}
+                          className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors" title={t('common.edit')}>✎</button>
+                      )}
+                      {editable && (
+                        <button onClick={() => del(job)}
+                          className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors" title={t('common.delete')}>✕</button>
+                      )}
                     </div>
                   </td>
                 </tr>
