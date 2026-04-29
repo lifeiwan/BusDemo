@@ -1,6 +1,6 @@
 from fastapi import Depends, HTTPException
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from firebase_admin import auth as firebase_auth
 
 from app.database import get_db
@@ -23,6 +23,7 @@ def get_current_user(
 
     user = (
         db.query(User)
+        .options(joinedload(User.role))
         .filter(User.firebase_uid == decoded["uid"], User.is_active == True)
         .first()
     )

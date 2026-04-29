@@ -94,7 +94,6 @@ def delete_role(
 
 @users_router.get("/me", response_model=UserMeRead)
 def get_me(
-    db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     role = current_user.role  # loaded via SQLAlchemy relationship
