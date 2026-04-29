@@ -1,6 +1,8 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
+import { canViewSection } from '../lib/permissions';
+import type { Section } from '../lib/permissions';
 
 const LANGS = [
   { code: 'en', label: 'EN' },
@@ -11,17 +13,19 @@ const LANGS = [
 export default function TopNav() {
   const { pathname } = useLocation();
   const { t, i18n } = useTranslation();
-  const { logout } = useAuth();
+  const { logout, appRole } = useAuth();
   const navigate = useNavigate();
 
-  const sections = [
-    { label: t('nav.dashboard'),    path: '/',                    prefix: '' },
-    { label: t('nav.operations'),   path: '/ops/job-groups',      prefix: '/ops' },
-    { label: t('nav.masterData'),   path: '/master/vehicles',     prefix: '/master' },
-    { label: t('nav.profitCenter'), path: '/profit/profitability',prefix: '/profit' },
-    { label: t('nav.reports'),      path: '/reports/pl',          prefix: '/reports' },
-    { label: t('nav.admin'),        path: '/admin/users',         prefix: '/admin' },
+  const allSections: { label: string; path: string; prefix: string; section: Section }[] = [
+    { label: t('nav.dashboard'),    path: '/',                    prefix: '',        section: 'dashboard' },
+    { label: t('nav.operations'),   path: '/ops/job-groups',      prefix: '/ops',    section: 'ops' },
+    { label: t('nav.masterData'),   path: '/master/vehicles',     prefix: '/master', section: 'master' },
+    { label: t('nav.profitCenter'), path: '/profit/profitability',prefix: '/profit', section: 'profit' },
+    { label: t('nav.reports'),      path: '/reports/pl',          prefix: '/reports',section: 'reports' },
+    { label: t('nav.admin'),        path: '/admin/users',         prefix: '/admin',  section: 'admin' },
   ];
+
+  const sections = allSections.filter(s => canViewSection(appRole, s.section));
 
   function isActive(prefix: string) {
     if (prefix === '') return pathname === '/';
@@ -31,7 +35,7 @@ export default function TopNav() {
   return (
     <header className="bg-slate-800 text-white flex items-center px-6 h-14 shrink-0 gap-8 shadow-md z-10">
       <span className="font-bold text-lg tracking-tight select-none">
-        Eva<span className="text-blue-400">Bus</span>
+        Super<span className="text-blue-400">Bus</span>
       </span>
       <nav className="flex gap-1 flex-1">
         {sections.map(s => (
