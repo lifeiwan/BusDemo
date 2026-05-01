@@ -28,7 +28,7 @@ const COLS: { key: ColKey; label: string }[] = [
 
 function fmt(n: number): string {
   if (n === 0) return '—';
-  const abs = '$' + Math.abs(n).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  const abs = '$' + Math.abs(n).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
   return n < 0 ? `(${abs})` : abs;
 }
 
@@ -55,7 +55,7 @@ function downloadCsv(content: string, filename: string) {
 function buildCsv(label: string, rows: VehicleMonthRow[], total: VehicleMonthRow): string {
   const header = ['Vehicle', ...COLS.map(c => c.label)].join(',');
   const dataRows = [...rows, total].map(r =>
-    [r.label, ...COLS.map(c => r[c.key].toFixed(0))].join(',')
+    [r.label, ...COLS.map(c => r[c.key].toFixed(2))].join(',')
   );
   return [`Vehicle Report — ${label}`, '', header, ...dataRows].join('\n');
 }

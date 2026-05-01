@@ -4,13 +4,14 @@ import { useData } from '../context/DataContext';
 import { useAuth } from '../context/AuthContext';
 import { canEdit } from '../lib/permissions';
 import { currentMonthRange } from '../lib/profit';
+import { todayStr } from '../lib/date';
 import EntityDetail from '../components/EntityDetail';
 import Badge from '../components/Badge';
 import Modal from '../components/Modal';
 import type { MaintenanceEntry, FuelEntry, Inspection, VehicleFixedCost } from '../types';
 
 function fmt$(n: number) {
-  return '$' + n.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  return '$' + n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 }
 
 type MaintForm = Omit<MaintenanceEntry, 'id' | 'vehicleId'>;
@@ -27,7 +28,7 @@ const FIXED_COST_LABELS: Record<VehicleFixedCost['type'], string> = {
 const blankFixedCost = (): FixedCostForm => ({
   type: 'loan',
   cost: 0,
-  startDate: new Date().toISOString().slice(0, 10),
+  startDate: todayStr(),
   notes: '',
 });
 
@@ -49,7 +50,7 @@ export default function VehicleDetail() {
   const vehicle = vehicles.find(v => v.id === Number(id));
   const [tab, setTab] = useState('fuel');
   const range = useMemo(currentMonthRange, []);
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayStr();
 
   // Maintenance modal state
   const [maintModal, setMaintModal] = useState<{ open: boolean; editing: MaintenanceEntry | null }>({ open: false, editing: null });

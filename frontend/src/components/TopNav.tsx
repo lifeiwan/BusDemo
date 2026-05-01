@@ -29,6 +29,8 @@ export default function TopNav() {
 
   function isActive(prefix: string) {
     if (prefix === '') return pathname === '/';
+    if (prefix === '/master') return pathname.startsWith('/master') && pathname !== '/master/ga-expenses';
+    if (prefix === '/profit') return pathname.startsWith('/profit') || pathname === '/master/ga-expenses';
     return pathname.startsWith(prefix);
   }
 

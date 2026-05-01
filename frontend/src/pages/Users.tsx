@@ -32,6 +32,9 @@ export default function Users() {
   const [createdCredentials, setCreatedCredentials] = useState<CreatedCredentials | null>(null);
   const [showCreatedPassword, setShowCreatedPassword] = useState(false);
 
+  // Pending role changes: userId → new roleId (not yet saved)
+  const [pendingRoles, setPendingRoles] = useState<Record<number, number>>({});
+
   useEffect(() => {
     Promise.all([
       apiFetch<AppUser[]>('/api/v1/users/'),
@@ -74,13 +77,16 @@ export default function Users() {
     }
   }
 
-  async function handleRoleChange(user: AppUser, roleId: number) {
+  async function handleRoleSave(user: AppUser) {
+    const roleId = pendingRoles[user.id];
+    if (roleId === undefined) return;
     try {
       const updated = await apiFetch<AppUser>(`/api/v1/users/${user.id}`, {
         method: 'PUT',
         body: JSON.stringify({ ...user, roleId }),
       });
       setUsers(prev => prev.map(u => u.id === user.id ? updated : u));
+      setPendingRoles(prev => { const next = { ...prev }; delete next[user.id]; return next; });
     } catch (err: unknown) {
       alert(err instanceof Error ? err.message : 'Error updating user');
     }
@@ -252,15 +258,25 @@ export default function Users() {
                     {isSystemAdmin ? (
                       <span className="text-sm font-medium text-slate-700">admin</span>
                     ) : editable ? (
-                      <select
-                        value={user.roleId}
-                        onChange={e => handleRoleChange(user, Number(e.target.value))}
-                        className="border border-slate-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      >
-                        {roles.map(r => (
-                          <option key={r.id} value={r.id}>{r.name}</option>
-                        ))}
-                      </select>
+                      <div className="flex items-center gap-2">
+                        <select
+                          value={pendingRoles[user.id] ?? user.roleId}
+                          onChange={e => setPendingRoles(prev => ({ ...prev, [user.id]: Number(e.target.value) }))}
+                          className="border border-slate-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                          {roles.map(r => (
+                            <option key={r.id} value={r.id}>{r.name}</option>
+                          ))}
+                        </select>
+                        {pendingRoles[user.id] !== undefined && (
+                          <button
+                            onClick={() => handleRoleSave(user)}
+                            className="text-xs font-semibold text-white bg-blue-500 hover:bg-blue-600 px-2 py-1 rounded transition-colors"
+                          >
+                            Save
+                          </button>
+                        )}
+                      </div>
                     ) : (
                       <span className="text-sm text-slate-600">{roles.find(r => r.id === user.roleId)?.name ?? user.roleId}</span>
                     )}

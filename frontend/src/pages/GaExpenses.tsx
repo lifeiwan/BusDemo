@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { canEdit } from '../lib/permissions';
 import Modal from '../components/Modal';
 import { GA_CATEGORIES } from '../data/gaEntries';
+import { todayStr } from '../lib/date';
 import type { GaEntry } from '../types';
 
 type FormState = Omit<GaEntry, 'id'>;
@@ -12,14 +13,14 @@ type FormState = Omit<GaEntry, 'id'>;
 function blankForm(): FormState {
   return {
     category: GA_CATEGORIES[0],
-    date: new Date().toISOString().slice(0, 10),
+    date: todayStr(),
     amount: 0,
     notes: '',
   };
 }
 
 function fmt$(n: number) {
-  return '$' + n.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  return '$' + n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 }
 
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -54,7 +55,7 @@ export default function GaExpenses() {
   }
 
   const isCurrentYear = selectedYear === currentYear;
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayStr();
 
   // Entries for selected year
   const yearEntries = useMemo(

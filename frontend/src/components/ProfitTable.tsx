@@ -3,10 +3,10 @@ import { useTranslation } from 'react-i18next';
 import type { ProfitRow } from '../types';
 
 function fmt$(n: number) {
-  return '$' + Math.abs(n).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  return '$' + Math.abs(n).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 }
 
-type SortCol = 'revenue' | 'accountsReceivable' | 'costs' | 'cogs' | 'ga' | 'netProfit' | 'margin';
+type SortCol = 'revenue' | 'accountsReceivable' | 'costs' | 'cogs' | 'ga' | 'netProfit' | 'margin' | 'fuelCost' | 'maintenanceCost' | 'driverPayroll' | 'driverFees';
 type SortDir = 'asc' | 'desc';
 
 function SortIcon({ active, dir }: { active: boolean; dir: SortDir }) {
@@ -18,13 +18,15 @@ interface Props {
   rows: ProfitRow[];
   showAR?: boolean;
   showCostSplit?: boolean;
+  showVehicleCosts?: boolean;
+  showDriverCosts?: boolean;
 }
 
-export default function ProfitTable({ rows, showAR, showCostSplit }: Props) {
+export default function ProfitTable({ rows, showAR, showCostSplit, showVehicleCosts, showDriverCosts }: Props) {
   const { t } = useTranslation();
-  const colSpan = 5 + (showAR ? 1 : 0) + (showCostSplit ? 1 : 0);
 
-  const [sortCol, setSortCol] = useState<SortCol>('netProfit');
+  const defaultSort: SortCol = showVehicleCosts || showDriverCosts ? 'revenue' : 'netProfit';
+  const [sortCol, setSortCol] = useState<SortCol>(defaultSort);
   const [sortDir, setSortDir] = useState<SortDir>('desc');
 
   function handleSort(col: SortCol) {
@@ -36,25 +38,38 @@ export default function ProfitTable({ rows, showAR, showCostSplit }: Props) {
     }
   }
 
-  function thCls(col: SortCol) {
+  function thCls(col: SortCol, colorClass = 'text-slate-500') {
     return `text-right px-4 py-3 text-xs font-semibold uppercase tracking-wide cursor-pointer select-none hover:bg-slate-100 transition-colors ${
-      sortCol === col ? 'text-blue-600' : 'text-slate-500'
+      sortCol === col ? 'text-blue-600' : colorClass
     }`;
   }
 
   const sorted = [...rows].sort((a, b) => {
-    let av = 0, bv = 0;
-    switch (sortCol) {
-      case 'revenue':           av = a.revenue;                    bv = b.revenue; break;
-      case 'accountsReceivable':av = a.accountsReceivable ?? 0;    bv = b.accountsReceivable ?? 0; break;
-      case 'costs':             av = a.costs;                      bv = b.costs; break;
-      case 'cogs':              av = a.cogs ?? 0;                  bv = b.cogs ?? 0; break;
-      case 'ga':                av = a.ga ?? 0;                    bv = b.ga ?? 0; break;
-      case 'netProfit':         av = a.netProfit;                  bv = b.netProfit; break;
-      case 'margin':            av = a.margin;                     bv = b.margin; break;
-    }
-    return sortDir === 'desc' ? bv - av : av - bv;
+    const val = (r: ProfitRow): number => {
+      switch (sortCol) {
+        case 'revenue':           return r.revenue;
+        case 'accountsReceivable':return r.accountsReceivable ?? 0;
+        case 'costs':             return r.costs;
+        case 'cogs':              return r.cogs ?? 0;
+        case 'ga':                return r.ga ?? 0;
+        case 'netProfit':         return r.netProfit;
+        case 'margin':            return r.margin;
+        case 'fuelCost':          return r.fuelCost ?? 0;
+        case 'maintenanceCost':   return r.maintenanceCost ?? 0;
+        case 'driverPayroll':     return r.driverPayroll ?? 0;
+        case 'driverFees':        return r.driverFees ?? 0;
+      }
+    };
+    return sortDir === 'desc' ? val(b) - val(a) : val(a) - val(b);
   });
+
+  // Compute colSpan for empty state
+  let colSpan = 4; // rank + name + revenue + costs (baseline)
+  if (showAR) colSpan++;
+  if (showCostSplit) colSpan += 2; // cogs + ga instead of costs
+  if (!showVehicleCosts && !showDriverCosts) colSpan += 2; // netProfit + margin
+  if (showVehicleCosts) colSpan += 2; // fuel + maintenance
+  if (showDriverCosts) colSpan += 2; // payroll + fees
 
   return (
     <div className="overflow-x-auto">
@@ -69,20 +84,39 @@ export default function ProfitTable({ rows, showAR, showCostSplit }: Props) {
             </th>
 
             {showAR && (
-              <th className={`text-right px-4 py-3 text-xs font-semibold uppercase tracking-wide cursor-pointer select-none hover:bg-slate-100 transition-colors ${sortCol === 'accountsReceivable' ? 'text-blue-600' : 'text-amber-600'}`}
-                onClick={() => handleSort('accountsReceivable')}>
+              <th className={thCls('accountsReceivable', 'text-amber-600')} onClick={() => handleSort('accountsReceivable')}>
                 {t('profitTable.accountsReceivable')}<SortIcon active={sortCol === 'accountsReceivable'} dir={sortDir} />
               </th>
             )}
 
-            {showCostSplit ? (
+            {/* ── Vehicle cost columns ── */}
+            {showVehicleCosts ? (
               <>
-                <th className={`text-right px-4 py-3 text-xs font-semibold uppercase tracking-wide cursor-pointer select-none hover:bg-slate-100 transition-colors ${sortCol === 'cogs' ? 'text-blue-600' : 'text-orange-600'}`}
-                  onClick={() => handleSort('cogs')}>
+                <th className={thCls('costs')} onClick={() => handleSort('costs')}>
+                  {t('profitTable.costs')}<SortIcon active={sortCol === 'costs'} dir={sortDir} />
+                </th>
+                <th className={thCls('fuelCost', 'text-orange-600')} onClick={() => handleSort('fuelCost')}>
+                  {t('profitTable.fuelCost')}<SortIcon active={sortCol === 'fuelCost'} dir={sortDir} />
+                </th>
+                <th className={thCls('maintenanceCost', 'text-purple-600')} onClick={() => handleSort('maintenanceCost')}>
+                  {t('profitTable.maintenanceCost')}<SortIcon active={sortCol === 'maintenanceCost'} dir={sortDir} />
+                </th>
+              </>
+            ) : showDriverCosts ? (
+              <>
+                <th className={thCls('driverPayroll', 'text-orange-600')} onClick={() => handleSort('driverPayroll')}>
+                  {t('profitTable.driverPayroll')}<SortIcon active={sortCol === 'driverPayroll'} dir={sortDir} />
+                </th>
+                <th className={thCls('driverFees', 'text-purple-600')} onClick={() => handleSort('driverFees')}>
+                  {t('profitTable.driverFees')}<SortIcon active={sortCol === 'driverFees'} dir={sortDir} />
+                </th>
+              </>
+            ) : showCostSplit ? (
+              <>
+                <th className={thCls('cogs', 'text-orange-600')} onClick={() => handleSort('cogs')}>
                   {t('profitTable.cogs')}<SortIcon active={sortCol === 'cogs'} dir={sortDir} />
                 </th>
-                <th className={`text-right px-4 py-3 text-xs font-semibold uppercase tracking-wide cursor-pointer select-none hover:bg-slate-100 transition-colors ${sortCol === 'ga' ? 'text-blue-600' : 'text-purple-600'}`}
-                  onClick={() => handleSort('ga')}>
+                <th className={thCls('ga', 'text-purple-600')} onClick={() => handleSort('ga')}>
                   {t('profitTable.ga')}<SortIcon active={sortCol === 'ga'} dir={sortDir} />
                 </th>
               </>
@@ -92,13 +126,17 @@ export default function ProfitTable({ rows, showAR, showCostSplit }: Props) {
               </th>
             )}
 
-            <th className={thCls('netProfit')} onClick={() => handleSort('netProfit')}>
-              {t('profitTable.netProfit')}<SortIcon active={sortCol === 'netProfit'} dir={sortDir} />
-            </th>
-
-            <th className={thCls('margin')} onClick={() => handleSort('margin')}>
-              {t('profitTable.margin')}<SortIcon active={sortCol === 'margin'} dir={sortDir} />
-            </th>
+            {/* ── Net profit + margin — hidden for vehicle/driver tabs ── */}
+            {!showVehicleCosts && !showDriverCosts && (
+              <>
+                <th className={thCls('netProfit')} onClick={() => handleSort('netProfit')}>
+                  {t('profitTable.netProfit')}<SortIcon active={sortCol === 'netProfit'} dir={sortDir} />
+                </th>
+                <th className={thCls('margin')} onClick={() => handleSort('margin')}>
+                  {t('profitTable.margin')}<SortIcon active={sortCol === 'margin'} dir={sortDir} />
+                </th>
+              </>
+            )}
           </tr>
         </thead>
         <tbody>
@@ -107,6 +145,7 @@ export default function ProfitTable({ rows, showAR, showCostSplit }: Props) {
               <td className="px-4 py-3 text-slate-400">{i + 1}</td>
               <td className="px-4 py-3 font-medium text-slate-800">{row.label}</td>
               <td className="px-4 py-3 text-right text-slate-700">{fmt$(row.revenue)}</td>
+
               {showAR && (
                 <td className="px-4 py-3 text-right">
                   <span className={`font-semibold ${(row.accountsReceivable ?? 0) > 0 ? 'text-amber-600' : 'text-slate-400'}`}>
@@ -114,7 +153,19 @@ export default function ProfitTable({ rows, showAR, showCostSplit }: Props) {
                   </span>
                 </td>
               )}
-              {showCostSplit ? (
+
+              {showVehicleCosts ? (
+                <>
+                  <td className="px-4 py-3 text-right text-red-600">{fmt$(row.costs)}</td>
+                  <td className="px-4 py-3 text-right text-orange-600">{fmt$(row.fuelCost ?? 0)}</td>
+                  <td className="px-4 py-3 text-right text-purple-600">{fmt$(row.maintenanceCost ?? 0)}</td>
+                </>
+              ) : showDriverCosts ? (
+                <>
+                  <td className="px-4 py-3 text-right text-orange-600">{fmt$(row.driverPayroll ?? 0)}</td>
+                  <td className="px-4 py-3 text-right text-purple-600">{fmt$(row.driverFees ?? 0)}</td>
+                </>
+              ) : showCostSplit ? (
                 <>
                   <td className="px-4 py-3 text-right text-orange-600">{fmt$(row.cogs ?? 0)}</td>
                   <td className="px-4 py-3 text-right text-purple-600">{fmt$(row.ga ?? 0)}</td>
@@ -122,14 +173,19 @@ export default function ProfitTable({ rows, showAR, showCostSplit }: Props) {
               ) : (
                 <td className="px-4 py-3 text-right text-red-600">{fmt$(row.costs)}</td>
               )}
-              <td className={`px-4 py-3 text-right font-semibold ${row.netProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                {row.netProfit < 0 ? '-' : ''}{fmt$(row.netProfit)}
-              </td>
-              <td className="px-4 py-3 text-right">
-                <span className={`text-xs font-semibold ${row.margin >= 20 ? 'text-green-600' : row.margin >= 0 ? 'text-yellow-600' : 'text-red-600'}`}>
-                  {row.margin.toFixed(1)}%
-                </span>
-              </td>
+
+              {!showVehicleCosts && !showDriverCosts && (
+                <>
+                  <td className={`px-4 py-3 text-right font-semibold ${row.netProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {row.netProfit < 0 ? '-' : ''}{fmt$(row.netProfit)}
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <span className={`text-xs font-semibold ${row.margin >= 20 ? 'text-green-600' : row.margin >= 0 ? 'text-yellow-600' : 'text-red-600'}`}>
+                      {row.margin.toFixed(1)}%
+                    </span>
+                  </td>
+                </>
+              )}
             </tr>
           ))}
           {sorted.length === 0 && (

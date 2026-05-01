@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useData } from '../context/DataContext';
+import { todayStr } from '../lib/date';
 import Modal from './Modal';
 import type { Job, JobLineItem } from '../types';
 
@@ -19,7 +20,7 @@ function blankForm(
     revenue: prefill.revenue ?? 0,
     driverPayroll: prefill.driverPayroll ?? 0,
     paymentsReceived: 0,
-    startDate: prefill.startDate ?? new Date().toISOString().slice(0, 10),
+    startDate: prefill.startDate ?? todayStr(),
     status: prefill.status ?? 'scheduled',
   };
 }
@@ -42,7 +43,7 @@ interface Props {
 export default function JobModal({ editing, prefill, onClose }: Props) {
   const { t } = useTranslation();
   const data = useData();
-  const { jobs, vehicles, drivers, customers, jobGroups, jobLineItems,
+  const { vehicles, drivers, customers, jobGroups, jobLineItems,
     addJob, updateJob,
     addJobLineItem, deleteJobLineItemsByJobId,
     addFuel } = data;
@@ -76,11 +77,12 @@ export default function JobModal({ editing, prefill, onClose }: Props) {
   );
 
   const [newItem, setNewItem] = useState<Omit<DraftLineItem, '_key'>>({
-    date: editing?.startDate ?? prefill?.startDate ?? new Date().toISOString().slice(0, 10),
+    date: editing?.startDate ?? prefill?.startDate ?? todayStr(),
     category: 'Toll', direction: 'cost', amount: 0, notes: '',
   });
 
   const [fuelDraft, setFuelDraft] = useState<FuelDraft>(blankFuelDraft);
+  const [saving, setSaving] = useState(false);
 
   function addDraftItem() {
     if (!newItem.amount || Number(newItem.amount) === 0) return;
@@ -92,7 +94,8 @@ export default function JobModal({ editing, prefill, onClose }: Props) {
     setDraftItems(prev => prev.filter(x => x._key !== key));
   }
 
-  function save() {
+  async function save() {
+    if (saving) return;
     if (!form.name.trim() || !form.vehicleId || !form.customerId || !form.jobGroupId) return;
     if (form.driverId && !Number(form.driverPayroll)) return;
     const payload = {
@@ -102,24 +105,25 @@ export default function JobModal({ editing, prefill, onClose }: Props) {
       paymentsReceived: Number(form.paymentsReceived),
     };
 
+    setSaving(true);
     let jobId: number;
     if (editing) {
-      updateJob({ ...editing, ...payload });
+      await updateJob({ ...editing, ...payload });
       jobId = editing.id;
-      deleteJobLineItemsByJobId(jobId);
+      await deleteJobLineItemsByJobId(jobId);
     } else {
-      jobId = jobs.length === 0 ? 1 : Math.max(...jobs.map(j => j.id)) + 1;
-      addJob(payload);
+      const created = await addJob(payload);
+      jobId = created.id;
     }
 
-    for (const item of draftItems) {
-      addJobLineItem({ jobId, date: item.date, category: item.category, direction: item.direction, amount: item.amount, notes: item.notes });
-    }
+    await Promise.all(draftItems.map(item =>
+      addJobLineItem({ jobId, date: item.date, category: item.category, direction: item.direction, amount: item.amount, notes: item.notes })
+    ));
 
     if (fuelDraft.enabled && fuelDraft.gallons && fuelDraft.cpg && form.vehicleId) {
       const gallons = parseFloat(fuelDraft.gallons);
       const cpg = parseFloat(fuelDraft.cpg);
-      addFuel({
+      await addFuel({
         vehicleId: form.vehicleId,
         date: form.startDate,
         gallons, cpg,
@@ -146,7 +150,7 @@ export default function JobModal({ editing, prefill, onClose }: Props) {
     : '—';
 
   const lineItemsTotal = draftItems.reduce((s, x) => x.direction === 'cost' ? s - x.amount : s + x.amount, 0);
-  const fmt$ = (n: number) => '$' + Math.abs(n).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  const fmt$ = (n: number) => '$' + Math.abs(n).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 
   return (
     <Modal title={editing ? t('jobs.editTitle') : t('jobs.addTitle')} onClose={onClose} wide>
@@ -156,7 +160,9 @@ export default function JobModal({ editing, prefill, onClose }: Props) {
         <div className="grid grid-cols-2 gap-4">
           <div className="col-span-2">
             <label className="block text-sm font-medium text-slate-700 mb-1">{t('jobs.jobName')} *</label>
-            <input value={form.name} onChange={set('name')}
+            <input value={form.name}
+              onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+              onCompositionEnd={e => setForm(f => ({ ...f, name: (e.target as HTMLInputElement).value }))}
               className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder={t('jobs.jobNamePlaceholder')} />
           </div>
           <div>
@@ -295,6 +301,7 @@ export default function JobModal({ editing, prefill, onClose }: Props) {
                 <label className="block text-xs text-slate-500 mb-1">{t('jobs.feeCategory')}</label>
                 <input value={newItem.category}
                   onChange={e => setNewItem(x => ({ ...x, category: e.target.value }))}
+                  onCompositionEnd={e => setNewItem(x => ({ ...x, category: (e.target as HTMLInputElement).value }))}
                   className="w-full border border-slate-300 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder={t('jobs.feeCategoryPlaceholder')} />
               </div>
               <div>
@@ -308,7 +315,7 @@ export default function JobModal({ editing, prefill, onClose }: Props) {
               </div>
               <div>
                 <label className="block text-xs text-slate-500 mb-1">{t('jobs.feeAmount')}</label>
-                <input type="number" value={newItem.amount} min={0} step="0.01"
+                <input type="number" value={newItem.amount} min={0.01} step="0.01"
                   onChange={e => setNewItem(x => ({ ...x, amount: parseFloat(e.target.value) || 0 }))}
                   className="w-full border border-slate-300 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500" />
               </div>
@@ -316,6 +323,7 @@ export default function JobModal({ editing, prefill, onClose }: Props) {
                 <label className="block text-xs text-slate-500 mb-1">{t('jobs.feeNotes')}</label>
                 <input value={newItem.notes}
                   onChange={e => setNewItem(x => ({ ...x, notes: e.target.value }))}
+                  onCompositionEnd={e => setNewItem(x => ({ ...x, notes: (e.target as HTMLInputElement).value }))}
                   className="w-full border border-slate-300 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder={t('common.optional')} />
               </div>
             </div>
@@ -379,8 +387,9 @@ export default function JobModal({ editing, prefill, onClose }: Props) {
 
         {/* ── Actions ── */}
         <div className="flex gap-2 pt-1 border-t border-slate-100">
-          <button onClick={save} className="flex-1 bg-blue-500 text-white py-2 rounded-lg text-sm font-medium hover:bg-blue-600 transition-colors">
-            {editing ? t('common.save') : t('jobs.add')}
+          <button onClick={save} disabled={saving}
+            className="flex-1 bg-blue-500 text-white py-2 rounded-lg text-sm font-medium hover:bg-blue-600 transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
+            {saving ? t('common.saving') : editing ? t('common.save') : t('jobs.add')}
           </button>
           <button onClick={onClose} className="flex-1 border border-slate-300 text-slate-600 py-2 rounded-lg text-sm font-medium hover:bg-slate-50 transition-colors">
             {t('common.cancel')}

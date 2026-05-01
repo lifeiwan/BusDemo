@@ -20,40 +20,33 @@ const URL_TO_KEY: Record<string, TabKey> = {
 };
 
 function fmt$(n: number) {
-  return '$' + Math.abs(n).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  return '$' + Math.abs(n).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 }
 
-function makePresets(): Record<string, () => DateRange> {
+function makePresets(anchor: Date): Record<string, () => DateRange> {
+  const y = anchor.getFullYear();
+  const m = anchor.getMonth();
   return {
-    thisMonth: currentMonthRange,
-    last3: () => {
-      const now = new Date();
-      return {
-        startDate: new Date(now.getFullYear(), now.getMonth() - 2, 1).toISOString().slice(0, 10),
-        endDate: new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().slice(0, 10),
-      };
-    },
-    last6: () => {
-      const now = new Date();
-      return {
-        startDate: new Date(now.getFullYear(), now.getMonth() - 5, 1).toISOString().slice(0, 10),
-        endDate: new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().slice(0, 10),
-      };
-    },
-    ytd: () => {
-      const now = new Date();
-      return {
-        startDate: `${now.getFullYear()}-01-01`,
-        endDate: new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().slice(0, 10),
-      };
-    },
-    last12: () => {
-      const now = new Date();
-      return {
-        startDate: new Date(now.getFullYear(), now.getMonth() - 11, 1).toISOString().slice(0, 10),
-        endDate: new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().slice(0, 10),
-      };
-    },
+    thisMonth: () => ({
+      startDate: new Date(y, m, 1).toISOString().slice(0, 10),
+      endDate: new Date(y, m + 1, 0).toISOString().slice(0, 10),
+    }),
+    last3: () => ({
+      startDate: new Date(y, m - 2, 1).toISOString().slice(0, 10),
+      endDate: new Date(y, m + 1, 0).toISOString().slice(0, 10),
+    }),
+    last6: () => ({
+      startDate: new Date(y, m - 5, 1).toISOString().slice(0, 10),
+      endDate: new Date(y, m + 1, 0).toISOString().slice(0, 10),
+    }),
+    ytd: () => ({
+      startDate: `${y}-01-01`,
+      endDate: new Date(y, m + 1, 0).toISOString().slice(0, 10),
+    }),
+    last12: () => ({
+      startDate: new Date(y, m - 11, 1).toISOString().slice(0, 10),
+      endDate: new Date(y, m + 1, 0).toISOString().slice(0, 10),
+    }),
   };
 }
 
@@ -63,20 +56,43 @@ export default function Profitability() {
   const urlTab = searchParams.get('tab') ?? '';
   const initialKey: TabKey = URL_TO_KEY[urlTab] ?? 'period';
   const [activeKey, setActiveKey] = useState<TabKey>(initialKey);
-  const [dateRange, setDateRange] = useState<DateRange>(currentMonthRange);
   const [activePreset, setActivePreset] = useState<string>('thisMonth');
+  const [customRange, setCustomRange] = useState<DateRange>(currentMonthRange);
+  const [pendingRange, setPendingRange] = useState<DateRange>(currentMonthRange);
   const data = useData();
 
-  const presets = useMemo(makePresets, []);
+  // Anchor presets to today so "This Month" always means the current calendar month.
+  // The earlier data-based anchor was masking a UTC timezone bug (now fixed in profit.ts).
+  const anchor = useMemo(() => new Date(), []);
+
+  const presets = useMemo(() => makePresets(anchor), [anchor]);
+
+  // dateRange drives the actual query; updated instantly by presets, or by Search button for custom
+  const dateRange = useMemo(() => {
+    if (activePreset && presets[activePreset]) return presets[activePreset]();
+    return customRange;
+  }, [activePreset, presets, customRange]);
+
+  const isDirty = !activePreset && (
+    pendingRange.startDate !== customRange.startDate ||
+    pendingRange.endDate !== customRange.endDate
+  );
 
   function applyPreset(key: string) {
-    setDateRange(presets[key]());
+    const range = presets[key]();
+    setCustomRange(range);
+    setPendingRange(range);
     setActivePreset(key);
   }
 
   function handleDateChange(field: 'startDate' | 'endDate', val: string) {
-    setDateRange(r => ({ ...r, [field]: val }));
-    setActivePreset(''); // custom range — deselect preset
+    setPendingRange(r => ({ ...r, [field]: val }));
+    setActivePreset('');
+  }
+
+  function handleSearch() {
+    setCustomRange(pendingRange);
+    setActivePreset('');
   }
 
   const rows = useMemo((): ProfitRow[] => {
@@ -138,19 +154,27 @@ export default function Profitability() {
           <label className="text-slate-500 text-xs font-medium">{t('profitability.from')}</label>
           <input
             type="date"
-            value={dateRange.startDate}
-            max={dateRange.endDate}
+            value={pendingRange.startDate}
+            max={pendingRange.endDate}
             onChange={e => handleDateChange('startDate', e.target.value)}
             className="border border-slate-300 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           <label className="text-slate-500 text-xs font-medium">{t('profitability.to')}</label>
           <input
             type="date"
-            value={dateRange.endDate}
-            min={dateRange.startDate}
+            value={pendingRange.endDate}
+            min={pendingRange.startDate}
             onChange={e => handleDateChange('endDate', e.target.value)}
             className="border border-slate-300 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
+          {isDirty && (
+            <button
+              onClick={handleSearch}
+              className="px-3 py-1.5 text-xs font-semibold bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors"
+            >
+              {t('profitability.search')}
+            </button>
+          )}
         </div>
       </div>
 
@@ -186,7 +210,12 @@ export default function Profitability() {
 
       {/* ── Table ── */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
-        <ProfitTable rows={rows} showAR={activeKey === 'customer'} showCostSplit={activeKey === 'period'} />
+        <ProfitTable
+          rows={rows}
+          showAR={activeKey === 'customer'}
+          showCostSplit={activeKey === 'period'}
+          showDriverCosts={activeKey === 'driver'}
+        />
       </div>
     </div>
   );

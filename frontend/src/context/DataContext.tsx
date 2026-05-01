@@ -28,7 +28,7 @@ interface DataContextValue extends DataSnapshot {
   updateJobGroup: (jg: JobGroup) => void;
   deleteJobGroup: (id: number) => void;
   // Jobs
-  addJob: (j: Omit<Job, 'id'>) => void;
+  addJob: (j: Omit<Job, 'id'>) => Promise<Job>;
   updateJob: (j: Job) => void;
   deleteJob: (id: number) => void;
   patchJobStatus: (id: number, status: string) => Promise<void>;
@@ -199,10 +199,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
     ),
 
     // Jobs
-    addJob: async (j) => run(
-      () => apiFetch<Job>('/api/v1/jobs/', { method: 'POST', body: JSON.stringify(j) }),
-      (c) => setJobs(prev => [...prev, c])
-    ),
+    addJob: async (j) => {
+      const created = await apiFetch<Job>('/api/v1/jobs/', { method: 'POST', body: JSON.stringify(j) });
+      setJobs(prev => [...prev, created]);
+      return created;
+    },
     updateJob: async (j) => run(
       () => apiFetch<Job>(`/api/v1/jobs/${j.id}`, { method: 'PUT', body: JSON.stringify(j) }),
       (u) => setJobs(prev => prev.map(x => x.id === j.id ? u : x))

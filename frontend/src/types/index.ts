@@ -163,6 +163,10 @@ export interface ProfitRow {
   netProfit: number;
   margin: number;
   accountsReceivable?: number;
+  fuelCost?: number;
+  maintenanceCost?: number;
+  driverPayroll?: number;
+  driverFees?: number;
 }
 
 export interface Role {

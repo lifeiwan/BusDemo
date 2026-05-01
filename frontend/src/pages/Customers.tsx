@@ -1,29 +1,22 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useData } from '../context/DataContext';
 import { useAuth } from '../context/AuthContext';
 import { canEdit } from '../lib/permissions';
-import { profitByCustomer, currentMonthRange } from '../lib/profit';
 import Modal from '../components/Modal';
 import type { Customer } from '../types';
 
 type FormState = Omit<Customer, 'id'>;
 const blank: FormState = { name: '', contactName: '', email: '', phone: '', notes: '' };
 
-function fmt$(n: number) {
-  return '$' + Math.abs(n).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-}
-
 export default function Customers() {
   const { t } = useTranslation();
   const { appRole } = useAuth();
   const editable = canEdit(appRole, 'ops');
+  const canViewDetail = appRole === 'admin' || appRole === 'manager';
   const data = useData();
-  const { customers, jobs, addCustomer, updateCustomer, deleteCustomer } = data;
-  const range = useMemo(currentMonthRange, []);
-  const profitRows = useMemo(() => profitByCustomer(range, data), [range, data]);
-  const profitMap = Object.fromEntries(profitRows.map(r => [r.id, r]));
+  const { customers, addCustomer, updateCustomer, deleteCustomer } = data;
 
   const [modal, setModal] = useState<{ open: boolean; editing: Customer | null }>({ open: false, editing: null });
   const [form, setForm] = useState<FormState>(blank);
@@ -43,11 +36,7 @@ export default function Customers() {
   }
 
   function del(c: Customer) {
-    const jobCount = jobs.filter(j => j.customerId === c.id).length;
-    const msg = jobCount > 0
-      ? t('customers.confirmDeleteWithJobs', { name: c.name, count: jobCount })
-      : t('customers.confirmDelete', { name: c.name });
-    if (window.confirm(msg)) deleteCustomer(c.id);
+    if (window.confirm(t('customers.confirmDelete', { name: c.name }))) deleteCustomer(c.id);
   }
 
   const set = (field: keyof FormState) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
@@ -71,27 +60,23 @@ export default function Customers() {
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-slate-50 border-b border-slate-200">
-              {[t('customers.title'), t('customers.contactName'), t('common.email'), t('customers.totalJobs'), t('customers.revenueMtd'), t('customers.netProfitMtd'), ''].map(h => (
+              {[t('customers.title'), t('customers.contactName'), t('common.email'), t('common.phone'), ''].map(h => (
                 <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide whitespace-nowrap">{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {customers.map(c => {
-              const jobCount = jobs.filter(j => j.customerId === c.id).length;
-              const profit = profitMap[c.id];
               return (
                 <tr key={c.id} className="border-b border-slate-100 hover:bg-slate-50">
                   <td className="px-4 py-3">
-                    <Link to={`/master/customers/${c.id}`} className="font-medium text-blue-600 hover:underline">{c.name}</Link>
+                    {canViewDetail
+                      ? <Link to={`/master/customers/${c.id}`} className="font-medium text-blue-600 hover:underline">{c.name}</Link>
+                      : <span className="font-medium text-slate-800">{c.name}</span>}
                   </td>
                   <td className="px-4 py-3 text-slate-600">{c.contactName}</td>
                   <td className="px-4 py-3 text-slate-500">{c.email}</td>
-                  <td className="px-4 py-3 text-slate-600">{jobCount}</td>
-                  <td className="px-4 py-3 font-semibold text-slate-700">{profit ? fmt$(profit.revenue) : '—'}</td>
-                  <td className={`px-4 py-3 font-semibold ${profit && profit.netProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                    {profit ? (profit.netProfit < 0 ? '-' : '') + fmt$(profit.netProfit) : '—'}
-                  </td>
+                  <td className="px-4 py-3 text-slate-600">{c.phone}</td>
                   <td className="px-4 py-3">
                     {editable && (
                       <div className="flex gap-1">

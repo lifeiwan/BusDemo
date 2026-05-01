@@ -3,7 +3,7 @@ import { useData } from '../context/DataContext';
 import Badge from '../components/Badge';
 
 function fmt$(n: number) {
-  return '$' + n.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  return '$' + n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 }
 
 export default function CustomerDetail() {

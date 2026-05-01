@@ -54,9 +54,9 @@ function inRange(date: string, range: DateRange): boolean {
 
 /** Number of calendar months fully or partially covered by a range. */
 function monthsInRange(range: DateRange): number {
-  const s = new Date(range.startDate.slice(0, 7) + '-01');
-  const e = new Date(range.endDate.slice(0, 7) + '-01');
-  return (e.getFullYear() - s.getFullYear()) * 12 + (e.getMonth() - s.getMonth()) + 1;
+  const [sy, sm] = range.startDate.slice(0, 7).split('-').map(Number);
+  const [ey, em] = range.endDate.slice(0, 7).split('-').map(Number);
+  return (ey - sy) * 12 + (em - sm) + 1;
 }
 
 // ── Cost helpers ──────────────────────────────────────────
@@ -152,7 +152,9 @@ export function jobNetProfit(jobId: number, range: DateRange, data: DataSnapshot
 // ── Job filtering ─────────────────────────────────────────
 
 function activeJobs(range: DateRange, data: DataSnapshot) {
-  return data.jobs.filter(j => j.startDate >= range.startDate && j.startDate <= range.endDate);
+  return data.jobs.filter(
+    j => j.status === 'completed' && j.startDate >= range.startDate && j.startDate <= range.endDate
+  );
 }
 
 // ── Pivot functions ───────────────────────────────────────
@@ -181,9 +183,13 @@ export function profitByVehicle(range: DateRange, data: DataSnapshot): ProfitRow
         s + data.jobLineItems
           .filter(li => li.jobId === j.id && li.direction === 'cost')
           .reduce((a, li) => a + li.amount, 0), 0);
-      const costs = totalVehicleCosts(v.id, range, data) + lineCosts;
+      const driverPayrollTotal = vJobs.reduce((s, j) => s + j.driverPayroll, 0);
+      const costs = totalVehicleCosts(v.id, range, data) + lineCosts + driverPayrollTotal;
       const netProfit = revenue - costs;
-      return { id: v.id, label: `${v.year} ${v.make} ${v.model}`, revenue, costs, netProfit, margin: revenue > 0 ? (netProfit / revenue) * 100 : 0 };
+      return {
+        id: v.id, label: `${v.year} ${v.make} ${v.model}`,
+        revenue, costs, netProfit, margin: revenue > 0 ? (netProfit / revenue) * 100 : 0,
+      };
     })
     .filter(r => r.revenue > 0 || r.costs > 0)
     .sort((a, b) => b.netProfit - a.netProfit);
@@ -211,9 +217,18 @@ export function profitByDriver(range: DateRange, data: DataSnapshot): ProfitRow[
           .reduce((a, li) => a + li.amount, 0);
         return s + j.revenue + lineIncome;
       }, 0);
-      const costs = dJobs.reduce((s, j) => s + j.driverPayroll, 0);
+      const driverPayroll = dJobs.reduce((s, j) => s + j.driverPayroll, 0);
+      const driverFees = dJobs.reduce((s, j) =>
+        s + data.jobLineItems
+          .filter(li => li.jobId === j.id && li.direction === 'cost')
+          .reduce((a, li) => a + li.amount, 0), 0);
+      const costs = driverPayroll + driverFees;
       const netProfit = revenue - costs;
-      return { id: d.id, label: d.name, revenue, costs, netProfit, margin: revenue > 0 ? (netProfit / revenue) * 100 : 0 };
+      return {
+        id: d.id, label: d.name,
+        revenue, costs, netProfit, margin: revenue > 0 ? (netProfit / revenue) * 100 : 0,
+        driverPayroll, driverFees,
+      };
     })
     .filter(r => r.revenue > 0 || r.costs > 0)
     .sort((a, b) => b.netProfit - a.netProfit);
@@ -222,9 +237,13 @@ export function profitByDriver(range: DateRange, data: DataSnapshot): ProfitRow[
 /** One row per calendar month within range, sorted most-recent first. */
 export function profitByMonthRange(range: DateRange, data: DataSnapshot): ProfitRow[] {
   const result: ProfitRow[] = [];
-  // Walk from end month down to start month
-  const startFloor = new Date(range.startDate.slice(0, 7) + '-01');
-  let cursor = new Date(range.endDate.slice(0, 7) + '-01');
+  // Walk from end month down to start month.
+  // Use local-time constructor (y, m, d) — NOT new Date('YYYY-MM-01') which is UTC
+  // and resolves to the previous day in Western timezones.
+  const [sy, sm] = range.startDate.slice(0, 7).split('-').map(Number);
+  const [ey, em] = range.endDate.slice(0, 7).split('-').map(Number);
+  const startFloor = new Date(sy, sm - 1, 1);
+  let cursor = new Date(ey, em - 1, 1);
   while (cursor >= startFloor) {
     const y = cursor.getFullYear(), m = cursor.getMonth();
     const monthRange: DateRange = {

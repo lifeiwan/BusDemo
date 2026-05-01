@@ -8,7 +8,7 @@ const MONTH_SHORT = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SE
 
 function fmt(n: number): string {
   if (n === 0) return '—';
-  const abs = '$' + Math.abs(n).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  const abs = '$' + Math.abs(n).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
   return n < 0 ? `(${abs})` : abs;
 }
 
@@ -119,7 +119,7 @@ export default function Reports() {
   function handleExport() {
     const header = ['Category', ...tableLabels].join(',');
     function row(label: string, vals: number[]) {
-      return [label, ...vals.map(v => v.toFixed(0))].join(',');
+      return [label, ...vals.map(v => v.toFixed(2))].join(',');
     }
     const lines = [
       `P&L Report — ${selectedYear}`,

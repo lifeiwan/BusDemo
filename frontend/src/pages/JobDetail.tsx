@@ -9,7 +9,7 @@ import StatusSwitcher from '../components/StatusSwitcher';
 import Badge from '../components/Badge';
 
 function fmt$(n: number) {
-  return '$' + Math.abs(n).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  return '$' + Math.abs(n).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 }
 
 export default function JobDetail() {

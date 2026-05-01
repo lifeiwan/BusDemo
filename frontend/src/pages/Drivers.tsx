@@ -1,9 +1,9 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useData } from '../context/DataContext';
 import { useAuth } from '../context/AuthContext';
 import { canEdit } from '../lib/permissions';
-import { currentMonthRange } from '../lib/profit';
+import { parseLocalDate } from '../lib/date';
 import Badge from '../components/Badge';
 import Modal from '../components/Modal';
 import type { Driver } from '../types';
@@ -11,17 +11,12 @@ import type { Driver } from '../types';
 type FormState = Omit<Driver, 'id'>;
 const blank: FormState = { name: '', license: '', licenseExpiry: '', phone: '', status: 'active' };
 
-function fmt$(n: number) {
-  return '$' + n.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-}
-
 export default function Drivers() {
   const { t } = useTranslation();
   const { appRole } = useAuth();
   const editable = canEdit(appRole, 'ops');
   const data = useData();
-  const { drivers, driverVehicleAssignments, vehicles, driverCosts, addDriver, updateDriver, deleteDriver } = data as typeof data & { driverVehicleAssignments: import('../types').DriverVehicleAssignment[] };
-  const range = useMemo(currentMonthRange, []);
+  const { drivers, driverVehicleAssignments, vehicles, addDriver, updateDriver, deleteDriver } = data as typeof data & { driverVehicleAssignments: import('../types').DriverVehicleAssignment[] };
 
   const [modal, setModal] = useState<{ open: boolean; editing: Driver | null }>({ open: false, editing: null });
   const [form, setForm] = useState<FormState>(blank);
@@ -51,11 +46,7 @@ export default function Drivers() {
     return v ? `${v.year} ${v.make} ${v.model}` : '—';
   };
 
-  const driverCostMTD = (driverId: number) =>
-    driverCosts.filter(c => c.driverId === driverId && c.date >= range.startDate && c.date <= range.endDate)
-      .reduce((s, c) => s + c.amount, 0);
-
-  const isExpiringSoon = (expiry: string) => (new Date(expiry).getTime() - Date.now()) / 86400000 < 90;
+  const isExpiringSoon = (expiry: string) => (parseLocalDate(expiry).getTime() - Date.now()) / 86400000 < 90;
 
   const set = (field: keyof FormState) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
     setForm(f => ({ ...f, [field]: e.target.value }));
@@ -78,7 +69,7 @@ export default function Drivers() {
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-slate-50 border-b border-slate-200">
-              {[t('drivers.title'), t('common.phone'), t('drivers.license'), t('drivers.licenseExpiry'), t('drivers.currentVehicle'), t('drivers.costMtd'), t('common.status'), ''].map(h => (
+              {[t('drivers.title'), t('common.phone'), t('drivers.license'), t('drivers.licenseExpiry'), t('drivers.currentVehicle'), t('common.status'), ''].map(h => (
                 <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide whitespace-nowrap">{h}</th>
               ))}
             </tr>
@@ -94,7 +85,6 @@ export default function Drivers() {
                   {isExpiringSoon(d.licenseExpiry) && <span className="ml-1 text-xs bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full">{t('drivers.expiringSoon')}</span>}
                 </td>
                 <td className="px-4 py-3 text-slate-600">{currentVehicle(d.id)}</td>
-                <td className="px-4 py-3 font-semibold text-slate-700">{fmt$(driverCostMTD(d.id))}</td>
                 <td className="px-4 py-3"><Badge value={d.status} /></td>
                 <td className="px-4 py-3">
                   {editable && (
